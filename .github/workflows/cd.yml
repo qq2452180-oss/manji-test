@@ -1,0 +1,79 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'deploy 发布；rollback 回到上一版'
+        required: true
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      revision:
+        description: '发布的完整 commit SHA；留空使用本次 main 版本（须已通过 CI）'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: manji-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select a version that passed CI
+        if: inputs.action == 'deploy'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          revision=${REQUESTED_REVISION:-$GITHUB_SHA}
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo 'Use a full, lowercase commit SHA.'; exit 1; }
+          git merge-base --is-ancestor "$revision" origin/main
+          passed=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$revision" -f branch=main -f status=success -f per_page=100 \
+            --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")] | length')
+          test "$passed" -gt 0 || { echo 'This version has not passed CI on main yet.'; exit 1; }
+          digest=$(docker buildx imagetools inspect "ghcr.io/qq2452180-oss/manji-test:sha-$revision" \
+            --format '{{json .Manifest}}' | jq -r '.digest')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "DEPLOY_REVISION=$revision" >> "$GITHUB_ENV"
+          echo "DEPLOY_IMAGE=ghcr.io/qq2452180-oss/manji-test@$digest" >> "$GITHUB_ENV"
+      - name: Update the application and verify production
+        env:
+          DEPLOY_KEY: ${{ secrets.MANJI_DEPLOY_SSH_KEY }}
+          DEPLOY_ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_KEY" || { echo 'MANJI_DEPLOY_SSH_KEY is not configured.'; exit 1; }
+          umask 077
+          key_file=$(mktemp)
+          trap 'rm -f "$key_file"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$key_file"
+          unset DEPLOY_KEY
+          case "$DEPLOY_ACTION" in
+            deploy) command="deploy $DEPLOY_IMAGE $DEPLOY_REVISION" ;;
+            rollback) command=rollback ;;
+            *) echo 'Unsupported action.'; exit 1 ;;
+          esac
+          ssh -T -i "$key_file" -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile=deploy/production/known_hosts \
+            -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 \
+            root@152.136.149.132 "$command" | tee "$RUNNER_TEMP/manji-deploy-result.txt"
+          {
+            printf '### Production %s\n\n```text\n' "$DEPLOY_ACTION"
+            cat "$RUNNER_TEMP/manji-deploy-result.txt"
+            printf '\n```\n\n[Open application](https://manjilu.cn/web/index.html)\n'
+          } >> "$GITHUB_STEP_SUMMARY"
