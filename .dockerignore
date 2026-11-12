@@ -1,0 +1,37 @@
+# Only send the files needed to build the production image.
+**
+!Dockerfile
+!.dockerignore
+!requirements.txt
+!src/
+!src/__init__.py
+!src/main.py
+!src/api/
+!src/api/**
+!src/common/
+!src/common/**
+!src/langgraph/
+!src/langgraph/**
+!src/service/
+!src/service/**
+!src/web/
+!src/web/package.json
+!src/web/package-lock.json
+!src/web/vite.config.js
+!src/web/*.html
+!src/web/src/
+!src/web/src/**
+
+# Exclude local/generated files even inside the allowed source directories.
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/__pycache__/
+**/*.py[cod]
+**/node_modules/
+**/dist/
+**/dist-html/
+**/coverage/
+**/.DS_Store
+**/*.log

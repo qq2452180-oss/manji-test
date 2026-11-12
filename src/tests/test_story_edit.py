@@ -3,6 +3,7 @@
 from copy import deepcopy
 from unittest.mock import Mock
 
+from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from langchain_core.messages import HumanMessage
 import psycopg
@@ -12,7 +13,7 @@ import pytest
 from src.api.app import create_app
 from src.service.media.repository import MediaRepository
 from src.service.story import StoryRepository
-from src.tests.test_guest_auth import bearer, guest_database, register  # noqa: F401
+from src.tests.test_guest_auth import bearer, guest_database, legacy_guest, register  # noqa: F401
 from src.tests.test_home import home_app, new_user, save_interview  # noqa: F401
 
 
@@ -207,23 +208,34 @@ def test_later_successful_save_overwrites_without_revision(edit_app, guest_datab
 
 def test_guest_upgrade_and_login_preserve_edited_story(edit_app, guest_database):
     with TestClient(edit_app) as client:
-        owner, headers = new_user(client)
+        guest = legacy_guest(client)
+        owner, headers = guest["user"]["id"], bearer(guest["token"])
         story_id, layout = seed_story(guest_database, owner)
         path = f"/api/stories/{story_id}"
         for photo in layout:
             photo["after_paragraph"] = None
-        saved = client.patch(path, headers=headers, json={
-            "title": "游客修改", "body": "已修改的正文。", "photo_layout": layout,
-        })
-        assert saved.status_code == 200
+        # 准备游客入口停用前已保存的编辑内容，不绕过当前接口的会员限制。
+        saved = jsonable_encoder(client.app.state.home.update_story(
+            owner, story_id, "游客修改", "已修改的正文。", layout,
+        ))
         after_edit = stored_story(guest_database, story_id)
-        assert register(client, "edited_guest", headers).json()["id"] == owner
-        assert client.get(path, headers=headers).json() == saved.json()
+        assert after_edit["user_id"] == owner
+        assert saved["photo_layout"] == layout
+        assert client.get(path, headers=headers).status_code == 403
+        assert client.patch(path, headers=headers, json={
+            "title": "不应保存", "body": "游客不能继续编辑。", "photo_layout": layout,
+        }).status_code == 403
+        assert stored_story(guest_database, story_id) == after_edit
+        upgraded = register(client, "edited_guest", headers)
+        assert upgraded.status_code == 201
+        assert upgraded.json()["id"] == owner
+        assert client.get(path, headers=headers).json() == saved
         login = client.post("/api/auth/login", json={
             "username": "edited_guest", "password": "private-password",
         })
         assert login.status_code == 200
-        assert client.get(path, headers=bearer(login.json()["token"])).json() == saved.json()
+        assert login.json()["user"]["id"] == owner
+        assert client.get(path, headers=bearer(login.json()["token"])).json() == saved
         assert client.get(path, headers=headers).status_code == 401
         assert stored_story(guest_database, story_id) == after_edit
 
