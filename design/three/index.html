@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>慢记 · 三版界面 / 保留原色 + 年轮访谈</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 3.8 3.5 6.2v14L9 17.8l6 2.4 5.5-2.4v-14L15 6.2 9 3.8Z"/><path d="M9 3.8v14M15 6.2v14"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5h8.5A3.5 3.5 0 0 1 17 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5Z"/><path d="M9 8h5M9 11.5h5"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 10.5v3M8 7v10M12 4v16M16 7.5v9M20 10.5v3"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="10" r="2.3"/><path d="M16 16.5a4.5 4.5 0 0 1 4.5 4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M3 13c5-5 13-5 18 0v4h-5v-4a12 12 0 0 0-8 0v4H3Z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+</svg>
+
+<main class="t-deck">
+
+  <header class="t-head">
+    <div class="t-head-left">
+      <div class="t-mark"><i></i><i></i><i></i></div>
+      <div>
+        <h1>慢记 · <em>三版界面</em></h1>
+        <p class="sub">保留原来的米纸与朱砂 · 语音通话页沿用你的年轮访谈</p>
+      </div>
+    </div>
+    <div class="t-head-right">
+      <span class="tag">2026.11 / 结构探索</span>
+      <p>这次不换色、不做新皮肤。三个版本只改<b>入口与版式</b>：<br>一张年轮时间轴、一页每日一问、一场和小暖的对话。</p>
+      <p style="margin-top:6px">颜色仍是 <b>#F6F1E8</b> 米纸、<b>#D86545</b> 朱砂、<b>#2E2925</b> 墨。按钮/小字用同一朱砂的深一级 <b>#B24E34</b>，保证白字 5:1。</p>
+    </div>
+  </header>
+
+  <!-- ══════════ 01 共用语音 ══════════ -->
+  <section class="t-sec">
+    <div class="t-sec-head">
+      <div class="t-sec-title"><span class="t-sec-no">01</span><h2>共用的语音通话页</h2><span>Shared / 年轮访谈</span></div>
+      <p class="t-sec-desc">三版都从这里进入：同心圆、居中的小暖、字幕在圆下、底部两个圆形操作。结构不变。</p>
+    </div>
+
+    <div class="t-shared">
+      <div>
+        <div class="t-frame">
+          <div class="s sv">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="sv-head"><span class="sv-back"><svg><use href="#i-chev"/></svg></span></div>
+            <div class="sv-body">
+              <div class="sv-id"><h1>小暖</h1><p class="sv-status"><i></i>小暖正在听您讲话</p></div>
+              <div class="sv-ring"><span class="r1"></span><span class="r2"></span><span class="r3"></span><span class="sv-core"><svg><use href="#i-mic"/></svg></span></div>
+              <p class="sv-caption">“小时候常走的那条路，<br>现在还记得是什么样吗？”</p>
+            </div>
+            <div class="sv-actions">
+              <div class="sv-controls">
+                <div class="sv-control"><span class="sv-circle"><svg><use href="#i-pause"/></svg></span>暂停</div>
+                <div class="sv-control end"><span class="sv-circle"><svg><use href="#i-phone"/></svg></span>结束</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="t-cap"><b>语音通话 · 年轮</b><span>SHARED</span></div>
+      </div>
+      <div class="t-shared-notes">
+        <p class="eyebrow">三版共用 · 不改结构</p>
+        <h3>你的年轮访谈页，<br>原样留在中心。</h3>
+        <p class="lead">这套页面的辨识度在“年轮”：三圈细线围着一个麦克风，字幕在最下面，操作只用两个圆形按钮。三版都不动它，只把它当作所有讲述的入口。</p>
+        <div class="t-shared-grid">
+          <div><b>结构</b>同心圆 + 居中麦克风 + 字幕 + 底部暂停/结束。</div>
+          <div><b>状态</b>在听、暂停、结束三种；暂停后出现“改用文字”。</div>
+          <div><b>三版差异</b>只改“从哪里进入”：时间轴、今日一问、对话。</div>
+        </div>
+        <div class="t-shared-note">唯一调整：圆形“结束”按钮用深一级朱砂 #B24E34（白字 5:1），小字颜色略加深；同心圆仍是原来的金色 #BC9C65。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 02 三个版本 ══════════ -->
+  <section class="t-sec">
+    <div class="t-sec-head">
+      <div class="t-sec-title"><span class="t-sec-no">02</span><h2>三个版本</h2><span>Three directions</span></div>
+      <p class="t-sec-desc">同一个产品、同一套颜色、同一张语音页，三种进入方式。左边是想法与取舍，右边是首页和书页。</p>
+    </div>
+
+    <!-- V1 -->
+    <div class="t-version" id="v1-row">
+      <div class="t-vnotes">
+        <p class="no">VERSION 01</p>
+        <h3>年轮 ·<br><em>生命时间轴</em></h3>
+        <p class="idea">把一生竖着摊开：少年、青年、中年、如今，每个阶段是一圈年轮。当前这一圈展开话题，其余收起来。</p>
+        <div class="points">
+          <div class="pt"><b>首页</b>竖向年轮时间轴，先看全貌</div>
+          <div class="pt"><b>选话题</b>在当前阶段里展开</div>
+          <div class="pt"><b>传记</b>年轮书封 + 章节</div>
+          <div class="pt"><b>导航</b>5 项，中心小暖是空心环</div>
+        </div>
+        <p class="voice-link"><span class="mini-ring"></span>语音通话 → 右上角小暖 / 中心环，进入共用年轮页</p>
+        <p class="risk"><b>取舍：</b>时间轴要长一点，适合愿意“先看看一生”的人；每次只展开当前阶段，避免一屏塞满。</p>
+      </div>
+      <div>
+        <div class="t-frame" id="v1-home">
+          <div class="s v1">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="v1-head"><div class="v1-brand"><span class="v1-mark"><i></i><i></i><i></i></span>慢记</div><span class="v1-me">我的</span></div>
+            <div class="v1-hero">
+              <div class="v1-watermark"></div>
+              <p class="k">人 生 轨 迹</p>
+              <h1>一圈一圈，<br>长成现在的您。</h1>
+              <p>选一段日子，小暖陪您慢慢聊。</p>
+            </div>
+            <div class="v1-timeline">
+              <div class="v1-stage collapsed"><span class="v1-node"></span><div class="v1-stage-head"><span class="no">01</span><h2>少年</h2><span class="yr">1950s–1960s</span><span class="cnt">6 段 ›</span></div><p class="v1-stage-desc">住过的地方、常走的路</p></div>
+              <div class="v1-stage current"><span class="v1-node"></span><div class="v1-stage-head"><span class="no">02</span><h2>青年</h2><span class="yr">1970s</span><span class="cnt">5 / 12</span></div><p class="v1-stage-desc">学习、劳动与见识</p>
+                <div class="v1-expand">
+                  <div class="v1-resume"><div class="l"><span>接着上次</span><b>常走的一条路</b></div><button>接着讲</button></div>
+                  <div class="v1-topic"><span class="bullet"></span><div><h3>住过的地方</h3><p>小时候，您住的地方附近都有些什么呀？</p></div><span class="st">已成篇</span></div>
+                  <div class="v1-topic"><span class="bullet"></span><div><h3>普通的一顿饭</h3><p>小时候，家里一般吃些什么呀？</p></div><span class="st new">还没讲</span></div>
+                  <a class="v1-more">看这一章全部 12 段 →</a>
+                </div>
+              </div>
+              <div class="v1-stage collapsed"><span class="v1-node"></span><div class="v1-stage-head"><span class="no">03</span><h2>中年</h2><span class="yr">1980s–2000s</span><span class="cnt">2 段 ›</span></div><p class="v1-stage-desc">成家、工作与担当</p></div>
+              <div class="v1-stage collapsed"><span class="v1-node"></span><div class="v1-stage-head"><span class="no">04</span><h2>如今</h2><span class="yr">现在</span><span class="cnt">1 段 ›</span></div><p class="v1-stage-desc">现在的生活</p></div>
+            </div>
+            <div class="v1-bookline"><span>您的传记 · <b>12 个故事</b> · 3 章</span><a>去读 →</a></div>
+            <nav class="nav-v1">
+              <span class="it on"><svg><use href="#i-map"/></svg>年轮</span>
+              <span class="it"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg><use href="#i-mic"/></svg></span><span>小暖</span></span>
+              <span class="it"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <div class="t-cap"><b>V1 首页 · 年轮</b><span>01 / HOME</span></div>
+      </div>
+      <div>
+        <div class="t-frame" id="v1-book">
+          <div class="s v1">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="v1b-head"><h1>我的传记</h1><span>目录</span></div>
+            <div class="v1b-body">
+              <div class="v1-book">
+                <div class="emblem"><i></i><i></i><i></i></div>
+                <p class="tag">慢 记 · 传 记</p>
+                <h1>把平常的日子<br>记下来</h1>
+                <p class="author">李秀兰 口述 · 小暖整理</p>
+                <p class="year">二 〇 二 六 · 冬</p>
+              </div>
+              <div class="v1b-chapters">
+                <div class="v1b-ch on"><span class="ring"></span><b>第一章 · 老巷里的童年</b><span>3 段</span></div>
+                <div class="v1b-ch"><span class="ring"></span><b>第二章 · 少年时的学习</b><span>2 段</span></div>
+                <div class="v1b-ch"><span class="ring"></span><b>第三章 · 青年时的生活</b><span>1 段</span></div>
+                <div class="v1b-ch"><span class="ring"></span><b>第四章 · 成年后的日子</b><span>未开始</span></div>
+                <div class="v1b-ch"><span class="ring"></span><b>第五章 · 中年生活与变化</b><span>未开始</span></div>
+              </div>
+              <button class="v1b-btn">继续读 · 第 12 页</button>
+            </div>
+            <nav class="nav-v1">
+              <span class="it"><svg><use href="#i-map"/></svg>年轮</span>
+              <span class="it on"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg><use href="#i-mic"/></svg></span><span>小暖</span></span>
+              <span class="it"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <div class="t-cap"><b>V1 传记 · 年轮书封</b><span>02 / BOOK</span></div>
+      </div>
+
+    </div>
+
+    <!-- V2 -->
+    <div class="t-version" id="v2-row">
+      <div class="t-vnotes">
+        <p class="no">VERSION 02</p>
+        <h3>每日一页 ·<br><em>今日一问</em></h3>
+        <p class="idea">不先看目录，也不选章节。每天只出现一个问题，像翻一页日历；想换再打开“话题签”。</p>
+        <div class="points">
+          <div class="pt"><b>首页</b>日期 + 今日一问 + 昨天写下的</div>
+          <div class="pt"><b>选话题</b>“换一个话题”打开话题签</div>
+          <div class="pt"><b>传记</b>日记式阅读页</div>
+          <div class="pt"><b>导航</b>4 项，无浮钮；家人在“我的”</div>
+        </div>
+        <p class="voice-link"><span class="mini-ring"></span>开始讲 / 小暖 tab → 共用年轮页</p>
+        <p class="risk"><b>取舍：</b>话题发现弱，适合每天只聊一点的人；首页必须有“换一个话题”，否则会被困在今天这一题。</p>
+      </div>
+      <div>
+        <div class="t-frame" id="v2-home">
+          <div class="s v2">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="v2-top"><span class="date">十一月十日 · 星期一</span><span class="me">我的</span></div>
+            <div class="v2-page">
+              <div class="v2-watermark">10</div>
+              <p class="v2-kicker">今 日 一 问</p>
+              <h1 class="v2-q">小时候常走的那条路，<br>现在还常想起吗？</h1>
+              <p class="v2-meta">常走的一条路 · 大约 5 分钟</p>
+              <button class="v2-start">开始讲</button>
+              <p class="v2-alt">今天不想讲这个？<a>换一个话题</a></p>
+              <div class="v2-draft"><span>上次还差 <b>2 分钟</b> · 常走的一条路</span><a>接着讲 →</a></div>
+              <div class="v2-note">“说不完整也没关系，先说说您记得的那个画面。”</div>
+              <div class="v2-divider"></div>
+              <p class="v2-y">昨 天 写 下 的</p>
+              <p class="v2-quote">“夏天走一趟，鞋面上全是土。”<span>来自《回家时的那几步路》</span></p>
+              <div class="v2-readlink"><span>读这一页 · 第 12 页</span><span>→</span></div>
+              <div class="v2-bookline"><span>您的传记 · <b>12 个故事</b> · 3 章</span><a>去读</a></div>
+            </div>
+            <nav class="nav-v2">
+              <span class="it on"><svg><use href="#i-map"/></svg>今天</span>
+              <span class="it"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="it"><svg><use href="#i-wave"/></svg>小暖</span>
+              <span class="it"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <div class="t-cap"><b>V2 首页 · 今日一问</b><span>01 / HOME</span></div>
+      </div>
+      <div>
+        <div class="t-frame" id="v2-read">
+          <div class="s v2">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="v2r-head"><span class="back" style="font-size:11.5px;color:var(--muted);min-height:44px;display:flex;align-items:center">‹ 传记</span><span class="date">十一月二日 · 星期一</span><span class="aa">Aa</span></div>
+            <div class="v2r-sheet">
+              <p class="v2r-date">十一月二日</p>
+              <h1>老巷里的童年</h1>
+              <p class="v2r-meta">第一章 · 来自 11 月 2 日的讲述</p>
+              <div class="v2r-rule"></div>
+              <p class="v2r-body lead"><span class="drop">说</span>起小时候，我先想起家门前的那条窄巷。两旁的房子挨得近，巷口有一棵树，再往外是几家小铺。天热时，邻居搬着凳子出来坐，择菜、收衣服。</p>
+              <p class="v2r-body">放学回来，我把书包放下就去找伙伴，常在巷子里跑得忘了时间。听见奶奶喊吃饭，才匆匆往家赶。如今再想那条巷子，最清楚的还是回家时这几步路。</p>
+              <div class="v2r-quote">“夏天走一趟，鞋面上全是土。”</div>
+              <p class="v2r-body">后来巷子拆了，母亲在电话里提过一次。</p>
+              <div class="v2r-folio"><span>12</span><span>把平常的日子记下来</span></div>
+            </div>
+            <div class="v2r-foot"><span>读给我听</span><span>翻到下一页 →</span></div>
+          </div>
+        </div>
+        <div class="t-cap"><b>V2 阅读 · 日记页</b><span>02 / READ</span></div>
+      </div>
+    </div>
+
+    <!-- V3 -->
+    <div class="t-version" id="v3-row">
+      <div class="t-vnotes">
+        <p class="no">VERSION 03</p>
+        <h3>小暖 ·<br><em>对话入口</em></h3>
+        <p class="idea">没有菜单，首页就是和小暖的一段对话。三个大建议代替话题列表，按住说话直接进入年轮页。</p>
+        <div class="points">
+          <div class="pt"><b>首页</b>对话 + 三个大建议</div>
+          <div class="pt"><b>选话题</b>在对话里点，或往上翻</div>
+          <div class="pt"><b>传记</b>书页 + 小暖批注</div>
+          <div class="pt"><b>导航</b>顶部“传记/我的” + 按住说话；家人进“我的”</div>
+        </div>
+        <p class="voice-link"><span class="mini-ring"></span>按住说话 → 共用年轮页</p>
+        <p class="risk"><b>取舍：</b>聊天感最强、菜单最少；书感要靠阅读页和小暖批注补回来。</p>
+      </div>
+      <div>
+        <div class="t-frame" id="v3-home">
+          <div class="s v3">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="v3-top">
+              <div class="v3-who"><span class="v3-av">暖</span><div><span class="name">小暖</span><span class="on"><i></i>在线</span></div></div>
+              <div class="v3-links"><a>传记</a><span class="me">我的</span></div>
+            </div>
+            <div class="v3-chat">
+              <p class="v3-day" style="margin-top:0">昨 天</p>
+              <div class="v3-bubble small">今天先聊到这儿，我把您说的收好了。</div>
+              <div class="v3-me">好，明天接着讲。</div>
+              <p class="v3-day">今 天</p>
+              <div class="v3-bubble">今天想聊点什么？不着急，想到哪儿说到哪儿。</div>
+              <div class="v3-sugg">
+                <button><div><b>常走的一条路</b><small>小时候的路，还记得吗？</small></div><i>→</i></button>
+                <button><div><b>普通的一顿饭</b><small>那时候，家里吃些什么？</small></div><i>→</i></button>
+                <button><div><b>闲下来做什么</b><small>不忙的时候，您爱干什么？</small></div><i>→</i></button>
+              </div>
+              <div class="v3-draft"><span class="who">上 次 说 到</span><p>“夏天走一趟，鞋面上全是土……”</p><button>接着讲</button></div>
+              <a class="v3-link">看看我的传记 · 12 个故事 →</a>
+            </div>
+            <div class="v3-input"><button class="v3-hold"><svg><use href="#i-mic"/></svg>按住说话</button><button class="v3-type">打字</button></div>
+          </div>
+        </div>
+        <div class="t-cap"><b>V3 首页 · 对话</b><span>01 / HOME</span></div>
+      </div>
+      <div>
+        <div class="t-frame" id="v3-read">
+          <div class="s v3">
+            <div class="sb"><span>9:41</span><span class="ico"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="v3r-head"><span class="back" style="font-size:11.5px;color:var(--muted);min-height:44px;display:flex;align-items:center">‹ 传记</span><span class="aa" style="width:44px;height:44px;display:grid;place-items:center;border:1px solid rgba(46,41,37,.2);font-family:Georgia,serif;font-size:14px;color:var(--brand-deep)">Aa</span></div>
+            <div class="v3r-sheet">
+              <p class="v3r-kicker">第一章 · 老巷里的童年</p>
+              <h1>回家时的那几步路</h1>
+              <p class="v3r-meta">来自 11 月 2 日的对话 · 小暖整理</p>
+              <div class="v3r-rule"></div>
+              <p class="v3r-body lead"><span class="drop">小</span>时候上学，要走过一条土路。路两边是两排梧桐，夏天叶子密，走一趟，鞋面上全是土。</p>
+              <p class="v3r-body">放了学，我们几个同学总在路上磨蹭。摘梧桐叶，比谁的叶子大；听见母亲在门口喊，才跑回家。</p>
+              <div class="v3r-note"><span class="av">暖</span><p>“这句话我记下了。下次可以多讲讲那棵树。”</p></div>
+              <p class="v3r-body">后来路修成了柏油路，梧桐也换成了别的树。可我梦里回去，还是那条土路。</p>
+              <div class="v3r-actions"><span>继续补充</span><span>读给我听</span></div>
+              <div class="v3r-folio">— 12 —</div>
+            </div>
+          </div>
+        </div>
+        <div class="t-cap"><b>V3 阅读 · 小暖批注</b><span>02 / READ</span></div>
+      </div>
+    </div>
+
+    <!-- 对比 -->
+    <div class="t-compare">
+      <div class="t-crow head"><span>放在一起看</span><span>V1 年轮</span><span>V2 每日一页</span><span>V3 对话</span></div>
+      <div class="t-crow"><b>首页入口</b><span class="v1">竖向时间轴</span><span class="v2">今日一问</span><span class="v3">小暖的对话</span></div>
+      <div class="t-crow"><b>选话题</b><span>展开当前阶段</span><span>换一个话题 / 话题签</span><span>对话里的三个建议</span></div>
+      <div class="t-crow"><b>传记</b><span>年轮书封 + 章节</span><span>日记式阅读页</span><span>书页 + 小暖批注</span></div>
+      <div class="t-crow"><b>导航</b><span>5 个 tab，中心空心环</span><span>4 个 tab，无浮钮</span><span>顶部传记/我的 + 按住说话</span></div>
+      <div class="t-crow"><b>语音通话</b><span>共用年轮页</span><span>共用年轮页</span><span>共用年轮页</span></div>
+      <div class="t-crow"><b>适合</b><span>想先看一生全貌</span><span>喜欢安静、每天一点</span><span>不想选菜单，想有人陪</span></div>
+    </div>
+
+    <div class="t-common">
+      <div>
+        <h3>三版共同遵守的，还是原来的规矩</h3>
+        <p>颜色、字号和触控没有为了“看起来新”而牺牲。米纸、墨、朱砂仍是主色；深一级朱砂只用于按钮和小字，保证白字 5:1。</p>
+        <div class="nums">
+          <div><b>19px</b><span>阅读正文 / 1.86</span></div>
+          <div><b>4.9:1</b><span>辅助字最低</span></div>
+          <div><b>54–58</b><span>主按钮高度</span></div>
+          <div><b>72</b><span>列表行</span></div>
+          <div><b>共用</b><span>年轮语音页</span></div>
+        </div>
+      </div>
+      <div class="list">
+        <div><i>✓</i>没有深色主界面，也没有把照片当结构。</div>
+        <div><i>✓</i>字号三档 + 朗读仍放在“我的”第一组。</div>
+        <div><i>✓</i>自动保存、可暂停、可打字；语音页不改结构。</div>
+        <div><i>✓</i>无横向滚动、无倒计时、无广告。</div>
+        <div><i>✓</i>图标全部带文字；状态不只靠颜色。</div>
+      </div>
+    </div>
+
+  </section>
+
+  <footer class="t-foot">
+    <div><b>慢记 · 三版界面</b>　原色保留 / 语音页共用</div>
+    <div>选定一版后：补齐其余页面 + 桌面，再进 Vue</div>
+  </footer>
+</main>
+</body>
+</html>

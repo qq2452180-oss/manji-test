@@ -1,0 +1,4 @@
+.prototype-memory-image { width:100%; margin:28px 0; }
+.prototype-memory-image img { display:block; width:100%; height:auto; aspect-ratio:3 / 2; object-fit:cover; border-radius:6px; background:var(--prototype-action); }
+.prototype-memory-image figcaption { margin-top:9px; color:var(--prototype-muted); font-size:12px; line-height:1.7; }
+@media (max-width:759px) { .prototype-memory-image { margin:24px 0; } }

@@ -1,0 +1,59 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+env.before
+env.after
+
+# Runtime data, databases, uploads, and backups
+/data/
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.log
+
+# Python dependencies and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Frontend dependencies, builds, and test output
+node_modules/
+dist/
+dist-html/
+coverage/
+.vite/
+playwright-report/
+test-results/
+
+# Editor and operating system files
+.idea/
+.DS_Store
+._*
+*.swp
+*.swo
+
+# Historical deployment artifacts; retain the runtime dependency snapshot
+/deploy/20*
+!/deploy/2026.11.08-local/
+/deploy/2026.11.08-local/*
+!/deploy/2026.11.08-local/requirements-runtime.txt
+
+# Design review screenshots; keep design source and assets
+/design/audit/
+/design/**/previews/
+/design/prototype/preview.jpg

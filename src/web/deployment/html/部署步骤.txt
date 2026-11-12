@@ -1,0 +1,119 @@
+慢记 /html/ 静态页面：手动上传和部署
+
+适用环境
+已检查的服务器使用 manji-src-gateway-1（Nginx 容器）。
+主机 /root/manji-src/shared/verification 已挂载到容器 /usr/share/nginx/verification。
+这次复用这个已有挂载，在其下新建 html 子目录，不需要新建容器、开放端口或重启后端。
+目标网址：https://manjilu.cn/html/
+
+本包只包含静态页面。默认直接进入人生地图，无需 prototype 参数。
+登录页的验证码仍显示在本页，不发短信、不创建真实账号。
+回答保存在当前标签页的 sessionStorage 中，不上传到数据库，关闭标签页后通常会清除。
+本地浏览器已填写的记录不会随静态包迁移；包内包含现有页面的初始故事和传记。
+
+一、上传
+
+在腾讯云 OrcaTerm 的“文件管理器”中打开 /root，上传：
+1. manji-html-2026-11-04.tar.gz
+2. manji-html-2026-11-04.sha256
+
+两个文件都放在 /root。文件管理器如果不可用，也可以用你熟悉的 SFTP 工具上传。
+本次无需上传整个项目、源代码、node_modules 或任何 .env。
+
+二、校验和解压（服务器终端执行）
+
+cd /root
+sha256sum -c manji-html-2026-11-04.sha256
+
+应显示 manji-html-2026-11-04.tar.gz: OK；否则先重新上传，不要继续。
+然后执行：
+
+test -d /root/manji-src/shared/verification && test ! -e /root/manji-src/shared/verification/html && tar --no-same-owner -xzf /root/manji-html-2026-11-04.tar.gz -C /root/manji-src/shared/verification
+docker exec manji-src-gateway-1 ls -l /usr/share/nginx/verification/html/index.html
+
+第二条应显示 index.html 文件。如果 html 目录已经存在，第一条会停止而不会覆盖；先确认已有目录用途。
+压缩包自带顶层 html 目录，不能再额外创建一层 html/html。
+
+旧版包可能提示忽略 LIBARCHIVE.xattr.com.apple.provenance 扩展头，这是 Linux tar 忽略 macOS 文件属性的提示，本身不表示网页文件损坏。确认 SHA256 校验通过、tar 没有其他解压错误且上述 index.html 存在后，可继续。后续打包已排除这些属性，无需替换已经校验并上传的旧包或修改其校验文件。
+
+三、准备 Nginx 配置草稿
+
+cd /root/manji-src/deploy/src
+test ! -e nginx.conf.before-html-20261104 && test ! -e nginx.conf.html-draft && cp -p nginx.conf nginx.conf.before-html-20261104 && cp -p nginx.conf nginx.conf.html-draft
+
+如果备份或草稿已经存在，请停止，保留原备份，先确认是否已经操作过这一步。
+通过 OrcaTerm 文件管理器编辑 nginx.conf.html-draft（只编辑草稿）。
+找到同一个 server 块中的这两行：
+
+    listen 443 ssl default_server;
+    server_name manjilu.cn;
+
+在 server_name manjilu.cn; 的下一行插入以下整个片段；保留其余配置：
+
+    # BEGIN MANJI HTML
+    location = /html {
+        return 308 /html/$is_args$args;
+    }
+
+    location ^~ /html/ {
+        root /usr/share/nginx/verification;
+        index index.html;
+        try_files $uri $uri/ =404;
+        add_header Cache-Control "no-store" always;
+        add_header Content-Security-Policy "connect-src 'none'; form-action 'none'" always;
+    }
+    # END MANJI HTML
+
+不要放进 80 端口块、www.manjilu.cn 块或现有 location / 块里面。
+保存草稿后可查看差异：
+
+diff -u nginx.conf nginx.conf.html-draft
+
+差异应该只有新增的上述片段。diff 有差异时退出码为 1，这是正常现象。
+
+四、测试并生效
+
+当前 nginx.conf 通过单文件挂载给容器。不要用 mv 替换原文件；用下面的 cat 保留原文件 inode：
+
+cat nginx.conf.html-draft > nginx.conf
+docker exec manji-src-gateway-1 nginx -t
+
+只有看到 syntax is ok 和 test is successful 后，才执行：
+
+docker exec manji-src-gateway-1 nginx -s reload
+
+这是平滑重新加载 Nginx 配置，不重建网关，不重启应用或数据库。
+如果 nginx -t 失败，不要 reload，立即恢复本次备份：
+
+cat nginx.conf.before-html-20261104 > nginx.conf
+docker exec manji-src-gateway-1 nginx -t
+
+修正草稿后再重复测试。若 reload 报错，先停止后续操作并保留错误信息。
+
+五、检查结果
+
+浏览器打开 https://manjilu.cn/html/，应直接看到人生地图。
+点击故事、查看问答、返回、填写一段文字、保存、结束整理、查看传记。
+“我的 → 返回登录”也应留在 /html/，不会进入正式账户。
+再检查正式站 https://manjilu.cn/web/index.html 仍正常。
+
+服务器终端也可以检查：
+
+curl --max-time 10 -sS -o /dev/null -w 'html HTTP %{http_code}\n' https://manjilu.cn/html/
+curl --max-time 10 -sS -o /dev/null -w '正式站 HTTP %{http_code}\n' https://manjilu.cn/web/index.html
+curl --max-time 10 -sS -o /dev/null -w '后端 HTTP %{http_code}\n' https://manjilu.cn/api/ready
+
+应全部为 HTTP 200。若 /html/ 为 404，检查目录层级及配置是否加载；若页面空白，检查 assets 是否完整上传。
+若终端检查成功但浏览器失败，核对浏览器地址及 CDN 缓存；不要重复安装后端。
+
+以后撤下
+
+先备份当时的最新 nginx.conf，并按上述“草稿 → cat 覆盖内容 → nginx -t → reload”方法，
+只移除 # BEGIN MANJI HTML 到 # END MANJI HTML 的片段。
+不要直接恢复今天的旧备份，以免撤回正式站后续的配置修改。
+再把 /root/manji-src/shared/verification/html 移到 /root 下独立备份目录，例如：
+
+test ! -e /root/manji-html-offline-20261104 && mv /root/manji-src/shared/verification/html /root/manji-html-offline-20261104
+
+这样页面已撤下，文件仍可恢复。确认不再需要时，再删除这个专属备份目录和上传包。
+不要删除 verification 的其他文件，不要执行 docker compose down，也不要删除数据库或媒体卷。

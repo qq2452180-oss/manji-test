@@ -1,0 +1,19 @@
+body:has(#app > .prototype-home),
+body:has(#app > .prototype-interview),
+body:has(#app > .prototype-story),
+body:has(#app > .prototype-library),
+body:has(#app > .prototype-organizing),
+body:has(#app > .prototype-history) {
+  --prototype-paper:#f8f3ea;
+  --prototype-ink:#62564b;
+  --prototype-muted:#817566;
+  --prototype-gold:#b88b2f;
+  --prototype-rule:rgba(98,86,75,.12);
+  --prototype-action:#e9dfce;
+  --prototype-action-hover:#e1d3bc;
+  background:var(--prototype-paper);
+}
+.prototype-home,.prototype-interview,.prototype-story,.prototype-library,.prototype-organizing,.prototype-history {
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--prototype-ink);
+}

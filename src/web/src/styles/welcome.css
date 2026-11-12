@@ -1,0 +1,67 @@
+.intro-page { display:flex; flex-direction:column; min-height:100svh; padding:24px 28px calc(20px + env(safe-area-inset-bottom)); }
+.intro-main { display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px 0; }
+.intro-main h1 { margin:0 0 19px; font-family:"Songti SC","STSong",serif; font-size:32px; line-height:1.4; font-weight:600; letter-spacing:1px; }
+.intro-copy { font-size:17px; line-height:1.9; color:#645b53; }
+.intro-actions { width:100%; max-width:420px; margin:0 auto; text-align:center; }
+.intro-actions .intro-primary { gap:16px; min-height:57px; border-radius:13px; background:#cb694a; font-size:18px; font-weight:500; }
+.intro-error { margin-bottom:15px; padding:11px 14px; border-radius:10px; background:#f4e3d7; color:#984b36; font-size:14px; text-align:left; overflow-wrap:anywhere; }
+@media (min-width:760px) { .intro-page { padding:32px 56px 24px; } .intro-main { padding-top:42px; } }
+@media (max-height:650px) { .intro-page { padding-top:14px; } .intro-main { padding:21px 0; } .intro-main h1 { font-size:28px; margin-bottom:12px; } }
+@media (max-width:350px) { .intro-page { padding-left:20px; padding-right:20px; } .intro-main h1 { font-size:27px; } .intro-copy { font-size:16px; } }
+
+/* The first visit keeps attention on the introduction. */
+.welcome-page .intro-main {
+  flex-shrink:0;
+  padding:clamp(40px, 9svh, 88px) 0;
+}
+.welcome-lines {
+  display:flex;
+  flex-direction:column;
+  gap:1.5rem;
+  width:100%;
+  max-width:30rem;
+  text-align:left;
+}
+.welcome-page .welcome-line {
+  margin:0;
+  overflow-wrap:anywhere;
+  animation:intro-line-reveal .65s ease var(--reveal-delay, 0ms) both;
+}
+.welcome-page h1.welcome-line {
+  font-size:2rem;
+  line-height:1.5;
+}
+.welcome-page p.welcome-line {
+  color:#645b53;
+  font-size:1.25rem;
+  line-height:1.9;
+}
+.welcome-page .intro-actions {
+  flex-shrink:0;
+}
+.welcome-page .intro-actions .intro-primary { display:block; text-wrap:balance; }
+.intro-loading {
+  display:flex;
+  flex:1;
+  align-items:center;
+  justify-content:center;
+  min-height:12rem;
+  padding:32px 0;
+  color:var(--color-muted);
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+@keyframes intro-line-reveal {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@media (max-width:350px) {
+  .welcome-page h1.welcome-line { font-size:1.75rem; }
+}
+@media (max-height:650px) {
+  .welcome-page .intro-main { padding:32px 0; }
+  .welcome-lines { gap:1.25rem; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .welcome-page .welcome-line { animation:none; }
+}

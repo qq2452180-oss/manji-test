@@ -1,0 +1,62 @@
+{
+  "source": "project-configured-tts",
+  "provider": "dashscope",
+  "model": "qwen3-tts-flash",
+  "voice": "Serena",
+  "speed": 1.0,
+  "audio_format": "wav",
+  "clips": [
+    {
+      "file": "permission-1.wav",
+      "text": "您说话，我得用手机的麦克风才能听见。",
+      "duration_ms": 3280,
+      "sha256": "3781de7b59c6614a27493623ca85d250326f18619f13a7a540596aa8c4e34e62"
+    },
+    {
+      "file": "permission-2.wav",
+      "text": "接下来浏览器可能会弹出询问，您点允许就好。",
+      "duration_ms": 4080,
+      "sha256": "5a74fb9b71437280b99f4f8f0572bc3af35d865defdbf406bb3d86016644f199"
+    },
+    {
+      "file": "guide-1.wav",
+      "text": "麦克风已经打开了。等会儿您讲，我来听。",
+      "duration_ms": 3680,
+      "sha256": "e256bc667a3b5d27b1575f06d5d6211060d5649d533e0887e49249e644bbdafa"
+    },
+    {
+      "file": "guide-2.wav",
+      "text": "您讲的时候，这个圈会跟着您的声音动。想停一下，就点右上角的暂停按钮。",
+      "duration_ms": 7360,
+      "sha256": "a553a9db03e804d274e216bf09534834cbfd55f8d122c146d0dc0540b8a79d7f"
+    },
+    {
+      "file": "guide-3.wav",
+      "text": "讲完后，点结束并整理，我会把您说的整理成文字，放进您的书里。",
+      "duration_ms": 6160,
+      "sha256": "aadf305687f38acd2cd4634a4f6f498172ce62b1ba537d17ea52137983bcac2f"
+    }
+  ],
+  "guide_track": {
+    "file": "guide-full.wav",
+    "duration_ms": 17200,
+    "sha256": "ab1e64185802c000537dd83d33124a0c226ea0466cb15bafe8bbcd917c297fd1",
+    "cues": [
+      {
+        "start_ms": 0,
+        "text": "麦克风已经打开了。等会儿您讲，我来听。",
+        "index": 0
+      },
+      {
+        "start_ms": 3680,
+        "text": "您讲的时候，这个圈会跟着您的声音动。想停一下，就点右上角的暂停按钮。",
+        "index": 1
+      },
+      {
+        "start_ms": 11040,
+        "text": "讲完后，点结束并整理，我会把您说的整理成文字，放进您的书里。",
+        "index": 2
+      }
+    ]
+  }
+}

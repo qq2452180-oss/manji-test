@@ -1,0 +1,7 @@
+.connected-notice { margin:20px 0; color:var(--prototype-muted); line-height:1.8; }
+.connected-error { color:#93483b; }
+.connected-retry { padding:8px 16px; border:1px solid var(--prototype-rule); border-radius:8px; background:var(--prototype-paper); }
+.connected-saved { margin:24px 0; padding:18px; border:1px solid var(--prototype-rule); border-radius:10px; }
+.connected-saved h2 { margin:0 0 12px; font-size:19px; }
+.connected-saved a { display:block; padding:8px 0; color:var(--prototype-ink); }
+.connected-transcript { white-space:pre-wrap; }

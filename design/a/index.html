@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>慢记 · 方向 A「纸墨」完整方案</title>
+<link rel="stylesheet" href="./a.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 3.8 3.5 6.2v14L9 17.8l6 2.4 5.5-2.4v-14L15 6.2 9 3.8Z"/><path d="M9 3.8v14M15 6.2v14"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5h8.5A3.5 3.5 0 0 1 17 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5Z"/><path d="M9 8h5M9 11.5h5"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 10.5v3M8 7v10M12 4v16M16 7.5v9M20 10.5v3"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="10" r="2.3"/><path d="M16 16.5a4.5 4.5 0 0 1 4.5 4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 6.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5-10-6.5Z"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4v-5Z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.5 6a8 8 0 0 1 0 12"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="m8.2 10.9 7.6-3.8M8.2 13.1l7.6 3.8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<main class="deck">
+
+  <!-- ══════════ 封面 ══════════ -->
+  <header class="cover">
+    <div class="cover-top">
+      <div class="cover-left">
+        <div class="cover-seal">慢</div>
+        <div>
+          <h1>慢记 · 界面重设计<br><em>方向 A ／ 纸墨</em></h1>
+          <p class="sub">给长辈用的讲述与传记界面 · 从“纸色后台”做成一册正在长成的书</p>
+        </div>
+      </div>
+      <div class="cover-right">
+        <span class="tag">2026.11 / V1</span>
+        <p>保留米纸与朱砂，重做结构：首页先给“接着讲”，讲述前先说明，讲完能立刻看到一页故事；传记有封面、目录、可调字号和朗读。<br><b>不是换字体，是把讲、记、读三件事重新排一遍。</b></p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ 01 原则 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">01</span><h2>五条原则</h2><span>Principles</span></div>
+      <p class="sec-desc">老年人不需要“更花哨的适老版”，需要更少的决定、更清楚的下一步、更确定的回执。</p>
+    </div>
+    <div class="principles">
+      <div class="principle"><span class="p-no">i.</span><h3>一屏一件事</h3><p>首页只做“接着讲”和“选一段”；讲述页只做“在听”和“说完了”。导航、进度、设置都不抢主操作。</p></div>
+      <div class="principle"><span class="p-no">ii.</span><h3>看得清</h3><p>正文 19px / 行高 1.8；主按钮 60px；正文对比度 14:1，最浅文字也有 4.9:1；不用细灰字承载信息。</p></div>
+      <div class="principle"><span class="p-no">iii.</span><h3>说得明白</h3><p>按钮写结果，不写功能：“开始讲这段”“说完了，帮我整理”“接着讲”，不用“开始访谈”“生成”。</p></div>
+      <div class="principle"><span class="p-no">iv.</span><h3>随时能停</h3><p>自动保存、可暂停、可打字、可离开；不设倒计时，不催“还剩几秒”。停一下是正常操作，不是失败。</p></div>
+      <div class="principle"><span class="p-no">v.</span><h3>讲了有回声</h3><p>每次结束都能看到一页故事、一句被记住的话，以及传记从 5 段变成 6 段。讲述不是消失在空气里。</p></div>
+    </div>
+  </section>
+
+  <!-- ══════════ 02 对比 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">02</span><h2>和现有页面比，改了什么</h2><span>Before → After</span></div>
+      <p class="sec-desc">A 不是把原页面重刷一遍。下面六处是结构性的改动，也是这次重做真正值钱的地方。</p>
+    </div>
+    <div class="compare">
+      <div class="compare-head"><span>现在的页面</span><span></span><span>新版</span></div>
+      <div class="compare-row"><span class="old">大标题“人生轨迹” + 横向时间轴，第三段常被裁掉</span><span class="arrow">→</span><span class="new">“接着讲”卡片 + 单行章节条 + 本页页面目录</span></div>
+      <div class="compare-row"><span class="old">点话题直接进入空白的麦克风页</span><span class="arrow">→</span><span class="new">先说明三步、时长、保存规则，再开始</span></div>
+      <div class="compare-row"><span class="old">讲述页 60% 是空的，主动作是浅米色</span><span class="arrow">→</span><span class="new">问题 + 实时大字 + 朱砂主按钮，一眼知道在听</span></div>
+      <div class="compare-row"><span class="old">传记打开就是正文，无封面、无目录</span><span class="arrow">→</span><span class="new">封面 → 目录 → 章页，像一本书那样进入</span></div>
+      <div class="compare-row"><span class="old">没有字号控制，桌面长文一行 40 字</span><span class="arrow">→</span><span class="new">标准 / 大 / 特大 + 朗读；桌面行宽 28–30 字</span></div>
+      <div class="compare-row"><span class="old">“我的”只有讲述记录和重置</span><span class="arrow">→</span><span class="new">我的空间、字号、朗读、家人、隐私、帮助</span></div>
+    </div>
+    <p class="compare-foot">六处改动指向同一件事：让长辈知道下一步做什么，做完能看见结果。</p>
+  </section>
+
+  <!-- ══════════ 03 基础系统 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">03</span><h2>基础系统</h2><span>Tokens</span></div>
+      <p class="sec-desc">颜色、字号、触控都按“老年用户能稳定使用”反推，不靠审美拍脑袋。对比度为 WCAG 2.1 实测。</p>
+    </div>
+    <div class="foundation">
+      <div>
+        <h3>颜色 / 全部通过 4.5:1</h3>
+        <div class="swatch-grid">
+          <div class="swatch-card"><div class="swatch-chip" style="background:#f7f1e6"></div><div class="swatch-info"><b>宣纸</b><span>#F7F1E6</span><em>页面底色</em></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#27211b"></div><div class="swatch-info"><b>墨</b><span>#27211B</span><em>正文 · 14.2:1</em></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#a8432a"></div><div class="swatch-info"><b>朱砂</b><span>#A8432A</span><em>主操作 · 5.3:1</em></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#5a5046"></div><div class="swatch-info"><b>墨灰</b><span>#5A5046</span><em>次要 · 7.0:1</em></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#8a673c"></div><div class="swatch-info"><b>赭石</b><span>#8A673C</span><em>章节 · 4.6:1</em></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#4e6a57"></div><div class="swatch-info"><b>松烟绿</b><span>#4E6A57</span><em>已保存 · 5.3:1</em></div></div>
+        </div>
+        <div class="rules">
+          <div class="rule-box"><b>60 / 54</b><span>主按钮 / 次按钮高度（px）</span></div>
+          <div class="rule-box"><b>72</b><span>列表行最小高度（px）</span></div>
+          <div class="rule-box"><b>24</b><span>左右页边距（px）</span></div>
+        </div>
+        <div class="rules">
+          <div class="rule-box"><b>1.8</b><span>正文最低行高</span></div>
+          <div class="rule-box"><b>28–30</b><span>桌面阅读每行汉字数</span></div>
+          <div class="rule-box"><b>1.4×</b><span>特大模式相对标准</span></div>
+        </div>
+      </div>
+      <div>
+        <h3>字体 / 四个主要层级 + 辅助</h3>
+        <div class="type-scale">
+          <div class="type-row"><span class="label">章标题</span><span class="sample" style="font-family:var(--serif);font-size:30px;font-weight:600;line-height:1.4">老巷里的童年</span><span class="meta">30 / 42</span></div>
+          <div class="type-row"><span class="label">页面标题</span><span class="sample" style="font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.5">今天，想聊哪一段</span><span class="meta">24 / 36</span></div>
+          <div class="type-row"><span class="label">正文</span><span class="sample" style="font-size:17px;line-height:1.6">选一个话题，小暖陪您慢慢聊。</span><span class="meta">17 / 28</span></div>
+          <div class="type-row"><span class="label">阅读</span><span class="sample" style="font-family:var(--serif);font-size:19px;line-height:1.6">说起小时候，我先想起家门前的那条窄巷。</span><span class="meta">19 / 34</span></div>
+          <div class="type-row"><span class="label">辅助</span><span class="sample" style="font-size:14px;color:#5a5046">已自动保存 · 讲了 2 分 40 秒</span><span class="meta">14 / 22</span></div>
+        </div>
+        <p class="micro" style="margin-top:14px">标题与阅读用宋体（Songti SC / 思源宋体），按钮、标签、表单用苹方。数字单独用 Georgia Italic，页码、章节号才有旧书感。</p>
+        <div class="rules" style="grid-template-columns:1fr 1fr">
+          <div class="rule-box"><b>只用一个强调色</b><span>朱砂只给主操作、当前章、印章。其余全是纸与墨。</span></div>
+          <div class="rule-box"><b>不用卡片堆叠</b><span>用细线、留白和字号分层；卡片只留给“继续上次”这类需要抓住的动作。</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 04 流程 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">04</span><h2>讲述的完整闭环</h2><span>Flow</span></div>
+      <p class="sec-desc">七个步骤，每一步只回答一个问题。任何一步离开，都不丢内容。</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step"><span class="n">01</span><b>首页</b><span>接着上次，或选一段</span></div>
+      <div class="flow-step"><span class="n">02</span><b>章节</b><span>这一章讲到哪了</span></div>
+      <div class="flow-step"><span class="n">03</span><b>准备</b><span>会怎么进行，多久</span></div>
+      <div class="flow-step"><span class="n">04</span><b>讲述</b><span>小暖在听，随时能停</span></div>
+      <div class="flow-step"><span class="n">05</span><b>整理</b><span>您的话在变成故事</span></div>
+      <div class="flow-step"><span class="n">06</span><b>故事</b><span>一页可读、可听、可补</span></div>
+      <div class="flow-step"><span class="n">07</span><b>传记</b><span>汇进书里，给家人看</span></div>
+    </div>
+    <div class="flow-note">
+      <div><b>开口门槛：</b>准备页把“我不知道说什么”变成三个明确的小步骤；打字与暂停始终在旁边。</div>
+      <div><b>收获感：</b>整理完成不是一个 toast，而是一整页故事；故事页明确写出“已收进哪一章”。</div>
+      <div><b>回来的理由：</b>首页永远先显示“上次没讲完”，其次才是新话题；讲述记录按状态分组。</div>
+    </div>
+  </section>
+
+  <!-- ══════════ 05 页面 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">05</span><h2>关键页面</h2><span>Screens · 390 × 844</span></div>
+      <p class="sec-desc">十二屏覆盖完整体验：从欢迎、登录、首页到讲述、整理、故事、传记、阅读，以及记录、我的和家人分享。</p>
+    </div>
+
+    <div class="screens">
+
+      <!-- 01 欢迎 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr welcome">
+                        <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="w-watermark">慢</div>
+            <div class="w-top"><div class="brand"><span class="seal">慢</span>慢记</div><span class="tagline">写 给 以 后</span></div>
+            <div class="w-body">
+              <p class="w-kicker">一 本 会 慢 慢 长 大 的 书</p>
+              <h1 class="w-title">您讲，<br>小暖记。</h1>
+              <p class="w-sub">不用准备，也不用一次讲完。<br>讲下的，会慢慢变成您的传记。</p>
+              <div class="w-points">
+                <div class="w-point"><em>01</em><div><b>选一段人生</b><span>从少年到如今，想从哪段说起都行</span></div></div>
+                <div class="w-point"><em>02</em><div><b>慢慢讲</b><span>语音或打字，中间可以停，会自动保存</span></div></div>
+                <div class="w-point"><em>03</em><div><b>变成一本书</b><span>整理成故事，收进您的传记，给家人读</span></div></div>
+              </div>
+            </div>
+            <div class="w-actions">
+              <button class="btn-p">开始</button>
+              <button class="btn-s">我已经有账号</button>
+              <p class="micro">第一次使用？可以先讲讲看，之后再保存。</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>第一次进入</b><span>01 / WELCOME</span></figcaption>
+        <p class="shot-note"><b>先讲清“这件事会变成什么”。</b>不是功能列表，而是三个承诺：选一段、慢慢讲、成一本书。</p>
+      </figure>
+
+      <!-- 02 登录 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+                        <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="back"><i>‹</i> 返回</span><span class="htitle">登录</span><span class="act">帮助</span></div>
+            <div class="login-body">
+              <p class="kicker" style="display:block;color:var(--gold);font-size:10.5px;letter-spacing:.22em">继 续 写 您 的 传 记</p>
+              <h1>欢迎回来</h1>
+              <p class="sub">用原来的账号登录，找回已经讲下的故事。</p>
+              <div class="field"><label>账号</label><div class="input">输入账号</div></div>
+              <div class="field"><label>密码</label><div class="input"><span>输入密码</span><span class="show">显示</span></div></div>
+              <button class="btn-p">登录并继续</button>
+              <div class="login-guest">先随便讲讲，稍后再保存</div>
+              <div class="login-note">这个浏览器里有 <b>3 段</b>还没保存的讲述。登录已有账号会打开该账号的内容，浏览器里的草稿不会自动合并。</div>
+              <p class="login-foot"><svg><use href="#i-lock"/></svg>登录信息只用于找回您的故事</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>登录</b><span>02 / SIGN IN</span></figcaption>
+        <p class="shot-note"><b>登录不是拦路虎。</b>保留“先随便讲讲”的游客路径，并把浏览器草稿与账号内容的关系提前说清。</p>
+      </figure>
+
+      <!-- 01 首页 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><div class="brand"><span class="seal">慢</span>慢记</div><span class="me">李</span></div>
+
+            <div class="home-hero">
+              <p class="kicker">人生轨迹 · 第一章</p>
+              <h1>今天，接着讲<br>哪一段？</h1>
+              <p class="sub">不用准备，想到哪儿说到哪儿。</p>
+            </div>
+
+            <div class="resume">
+              <div class="resume-top"><span class="lab">上次没讲完</span><span class="saved"><i></i>已自动保存</span></div>
+              <h2>常走的一条路</h2>
+              <p class="excerpt">“夏天走一趟，鞋面上全是土……”</p>
+              <div class="resume-bot">
+                <div class="time">已经讲了<b>2 分 40 秒</b></div>
+                <button class="mini">接着讲 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+              </div>
+            </div>
+
+            <div class="chapter">
+              <div class="chapter-top">
+                <div class="name"><em>第一章</em><b>早年生活与长大的地方</b></div>
+                <span class="change">换一章</span>
+              </div>
+              <div class="chapter-bar"><span class="track"><i style="width:42%"></i></span><span class="count">5 / 12</span></div>
+            </div>
+
+            <div class="topics">
+              <div class="topic">
+                <span class="no">〇一</span>
+                <div><h3>住过的地方</h3><p>小时候，您住的地方附近都有些什么呀？</p></div>
+                <div class="right"><span class="pill">已成篇</span><span class="arr">→</span></div>
+              </div>
+              <div class="topic">
+                <span class="no">〇二</span>
+                <div><h3>普通的一顿饭</h3><p>小时候，家里一般吃些什么呀？</p></div>
+                <div class="right"><span class="pill new">还没讲</span><span class="arr">→</span></div>
+              </div>
+              <div class="topic">
+                <span class="no">〇三</span>
+                <div><h3>闲下来做什么</h3><p>小时候不忙的时候，您都爱干点什么？</p></div>
+                <div class="right"><span class="pill new">还没讲</span><span class="arr">→</span></div>
+              </div>
+            </div>
+            <div class="all-link">看这一章全部 12 段 →</div>
+
+            <nav class="nav">
+              <span class="it on"><svg><use href="#i-map"/></svg>轨迹</span>
+              <span class="it"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg class="mwave"><use href="#i-wave"/></svg></span><span>小暖</span></span>
+              <span class="it"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>人生轨迹</b><span>03 / HOME</span></figcaption>
+        <p class="shot-note"><b>先回答“上次讲到哪”。</b>接着讲卡是首屏唯一实心按钮；章节进度、本页页目都在一屏内。</p>
+      </figure>
+
+      <!-- 02 讲述准备 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="back"><i>‹</i> 返回</span><span class="htitle">常走的一条路</span><span class="act">换一个</span></div>
+
+            <div class="prep-body">
+              <p class="prep-kicker">第一章 · 早年生活</p>
+              <h1 class="prep-q"><span class="quote">“</span>小时候常走的那条路，<br>现在还常想起吗？</h1>
+              <div class="prep-rule"></div>
+              <p class="prep-lab">接 下 来</p>
+              <div class="steps">
+                <div class="step"><span class="n">01</span><div><b>小暖会问几个小问题</b><span>想到哪儿说到哪儿，不用组织语言。</span></div></div>
+                <div class="step"><span class="n">02</span><div><b>您慢慢说，说多久都行</b><span>中间可以停，也可以改成打字。</span></div></div>
+                <div class="step"><span class="n">03</span><div><b>说完，小暖帮您整理成一页故事</b><span>整理好会放进第一章，您可以先看再改。</span></div></div>
+              </div>
+              <div class="prep-note"><b>大约 5–10 分钟，不用一次讲完。</b><br>说的每一句都会自动保存；离开后再回来，还能接着讲。</div>
+              <div class="starters">
+                <div class="st-head"><span>如 果 不 知 道 从 哪 儿 说 起</span><em>可以从这里开始</em></div>
+                <div class="st-chips"><span>“我记得那条路……”</span><span>“那时候，一到夏天……”</span></div>
+              </div>
+            </div>
+
+            <div class="prep-actions">
+              <button class="btn-p">开始讲这段</button>
+              <button class="btn-s">先用打字</button>
+              <p class="privacy"><svg><use href="#i-lock"/></svg>录音只用来整理您的故事，不会公开</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>讲述准备</b><span>04 / PREPARE</span></figcaption>
+        <p class="shot-note"><b>把“我该说什么”变成三个明确步骤。</b>时长、保存、隐私一次说清，主按钮仍是朱砂。</p>
+      </figure>
+
+      <!-- 03 讲述中 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr talk">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="back"><i>‹</i> 返回</span><span class="htitle">讲述中</span><span class="act" style="visibility:hidden">结束</span></div>
+            <p class="talk-topic">第一章 · 常 走 的 一 条 路</p>
+            <div class="talk-main">
+            <div class="q-card">
+              <span class="who"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3v18M8 7v10M4 10v4M16 7v10M20 10v4"/></svg>小 暖 问</span>
+              <p>“记得小时候常走的那条路，是什么样吗？”</p>
+            </div>
+
+            <div class="speech">
+              <p class="lab">您 说</p>
+              <p>记得，是一条土路，两边都是梧桐树。夏天走一趟，鞋面上全是土。放了学，我们几个同学总在路上磨蹭，摘梧桐叶，听见母亲在门口喊，才跑回家。<span class="cursor"></span></p>
+              <p class="hint">想到哪儿说到哪儿，说错了也没关系。</p>
+            </div>
+
+            <div class="listen">
+              <span class="state"><span class="dot"></span>正在听</span>
+              <span class="wave"><i style="height:7px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:13px"></i><i style="height:6px"></i></span>
+              <span class="auto"><svg><use href="#i-check"/></svg>已自动保存</span>
+            </div>
+            </div>
+
+            <div class="talk-actions">
+              <button class="btn-p">说完了，帮我整理</button>
+              <div class="row2">
+                <button class="btn-s">先停一下</button>
+                <button class="btn-s">改用打字</button>
+              </div>
+              <p class="privacy"><svg><use href="#i-lock"/></svg>录音只用来整理故事 · 不会公开</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>讲述中</b><span>05 / LISTEN</span></figcaption>
+        <p class="shot-note"><b>浅色的“小暖在听”。</b>问题、实时大字、保存状态同屏；主按钮 60px，暂停和打字始终在旁边。</p>
+      </figure>
+
+
+      <!-- 04 整理中 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr org">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span></span><span class="htitle">整理讲述</span><span class="act">先离开</span></div>
+            <div class="org-body">
+              <div class="stack"><div class="sheet s1"></div><div class="sheet s2"></div><div class="sheet s3"><span></span><span></span><span></span><b>慢</b></div></div>
+              <h1>正在把您的话，<br>理成一页故事</h1>
+              <p class="org-sub">大概需要十几秒，您可以先歇一会儿。</p>
+              <div class="org-steps">
+                <div class="org-step done"><span class="ic"><svg><use href="#i-check"/></svg></span><b>讲述已保存</b><span>· 2 分 40 秒</span></div>
+                <div class="org-step done"><span class="ic"><svg><use href="#i-check"/></svg></span><b>分成 3 段</b><span>· 按您说的顺序</span></div>
+                <div class="org-step doing"><span class="ic"><i></i></span><b>正在写成故事</b><span>· 放进第一章</span></div>
+              </div>
+              <p class="org-note">离开也没关系，整理好会放在「早年生活」这一章。</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>整理中</b><span>06 / ORGANIZE</span></figcaption>
+        <p class="shot-note"><b>把等待变成看得见的进展。</b>三步状态 + 明确承诺“离开也会保存”，不转圈、不催。</p>
+      </figure>
+
+      <!-- 05 故事页 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr story">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="back"><i>‹</i> 第一章</span><span class="htitle">故事</span><span class="act"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><use href="#i-more"/></svg></span></div>
+            <div class="story-body">
+              <p class="story-kicker">第 一 章 · 早 年 生 活</p>
+              <h1 class="story-title">回家时的那几步路</h1>
+              <p class="story-meta">来自 11 月 2 日的讲述 · 已整理</p>
+              <div class="story-rule"></div>
+              <p class="story-text lead"><span class="drop">小</span>时候上学，要走过一条土路。路两边是两排梧桐，夏天叶子密，走一趟，鞋面上全是土。</p>
+              <p class="story-text">放了学，我们几个同学总在路上磨蹭。摘梧桐叶，比谁的叶子大；听见母亲在门口喊，才跑回家。</p>
+              <div class="story-pull">“夏天走一趟，鞋面上全是土。”<br><span style="font-size:11px;color:#8a7a66;letter-spacing:.06em">—— 您在那次讲述里说的</span></div>
+              <p class="story-text">后来路修成了柏油路，梧桐也换成了别的树。可我梦里回去，还是那条土路。</p>
+              <div class="story-end"><span class="stamp">已收进<br>第一章</span><span>《把平常的日子记下来》· 第 12 页</span></div>
+              <div class="story-next"><span style="color:var(--ink2)">下一章 · 少年时的学习与劳动</span><span>还没开始 →</span></div>
+            </div>
+            <div class="story-bar">
+              <span class="bi on"><svg><use href="#i-speaker"/></svg>读给我听</span>
+              <span class="bi"><svg><use href="#i-plus"/></svg>继续补充</span>
+              <span class="bi"><svg><use href="#i-share"/></svg>分享给家人</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>故事页</b><span>07 / STORY</span></figcaption>
+        <p class="shot-note"><b>讲完的回报是一页可读的故事。</b>保留您说过的原句作引文，明确标出“来自哪次讲述”和“已收进第一章”。</p>
+      </figure>
+
+      <!-- 06 传记封面 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="htitle" style="font-size:17px;letter-spacing:.06em">我的传记</span><span class="act">给家人看</span></div>
+            <div class="cover-body">
+              <div class="book-cover">
+                <div class="spine"></div><div class="ribbon"></div>
+                <p class="bk-top">慢 记 · 传 记</p>
+                <h1>把平常的日子<br>记下来</h1>
+                <p class="bk-sub">您口述 · 小暖整理</p>
+                <p class="bk-author">李 秀 兰</p>
+                <p class="bk-year">二 〇 二 六 · 冬</p>
+                <span class="stamp">修订<br>初稿</span>
+              </div>
+              <div class="cover-meta"><span class="left">已写完 <b>3</b> 章 · <b>12</b> 个故事</span><span class="right">约 1.2 万字</span></div>
+              <div class="cover-actions">
+                <button class="btn-p">继续读 · 第 12 页</button>
+                <div class="row2"><button class="btn-s">目录</button><button class="btn-s">读给我听</button></div>
+                <p class="cover-note"><svg><use href="#i-lock"/></svg>只有您和家人能看到 · 随时可以取消分享</p>
+              </div>
+            </div>
+            <nav class="nav">
+              <span class="it"><svg><use href="#i-map"/></svg>轨迹</span>
+              <span class="it on"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg class="mwave"><use href="#i-wave"/></svg></span><span>小暖</span></span>
+              <span class="it"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>传记封面</b><span>08 / BOOK</span></figcaption>
+        <p class="shot-note"><b>先给一个“书”的实体感，再进入正文。</b>书名、口述者、修订印章、章节与字数，都是讲下去的长期动机。</p>
+      </figure>
+
+
+      <!-- 07 传记阅读 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr read">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="back"><i>‹</i> 目录</span><span class="htitle">第一章</span><span class="act"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><use href="#i-more"/></svg></span></div>
+            <div class="read-progress"><i></i></div>
+            <div class="read-body">
+              <p class="read-chapno">第 一 章</p>
+              <h1 class="read-title">老巷里的童年</h1>
+              <div class="read-ornament"><span>慢 记</span></div>
+              <p class="read-text lead"><span class="drop">说</span>起小时候，我先想起家门前的那条窄巷。两旁的房子挨得近，巷口有一棵树，再往外是几家小铺。天热时，邻居搬着凳子出来坐，择菜、收衣服，缺什么便隔着门招呼一声。</p>
+              <p class="read-text">放学回来，我把书包放下就去找伙伴，常在巷子里跑得忘了时间。听见奶奶喊吃饭，才匆匆往家赶。如今再想那条巷子，最清楚的还是回家时这几步路。</p>
+              <p class="read-text">后来巷子拆了，母亲在电话里提过一次。</p>
+              <p class="read-source">本章根据 11 月 2 日、11 月 5 日的讲述整理 · 共 3 段</p>
+            </div>
+            <div class="read-folio">— 12 —</div>
+            <div class="read-toolbar">
+              <span><svg><use href="#i-text"/></svg>目录</span>
+              <span><b class="aa">Aa</b>字号</span>
+              <span><svg><use href="#i-speaker"/></svg>朗读</span>
+              <span><svg><use href="#i-share"/></svg>分享</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>传记阅读</b><span>09 / READ</span></figcaption>
+        <p class="shot-note"><b>19px 宋体、每行 17–19 字、页码与出处。</b>字号、朗读、分享常驻底部，不藏在设置里。</p>
+      </figure>
+
+      <!-- 08 讲述记录 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="back"><i>‹</i> 我的</span><span class="htitle">讲述记录</span><span class="act" style="visibility:hidden">筛选</span></div>
+            <div class="chips"><span class="chip on">全部 <em>12</em></span><span class="chip">待整理 <em>3</em></span><span class="chip">已成篇 <em>9</em></span></div>
+            <div class="recs">
+              <p class="rec-group">十 一 月</p>
+              <div class="rec">
+                <div><h3>常走的一条路</h3><p class="meta">今天 09:12 · 讲了 2 分 40 秒</p></div>
+                <div class="r"><span class="pill wip">待整理</span><span class="resume-btn">继续整理 →</span></div>
+              </div>
+              <div class="rec">
+                <div><h3>住过的地方</h3><p class="meta">11 月 2 日 · 6 分钟 · 已成篇</p></div>
+                <div class="r"><span class="pill">已收进第一章</span><span class="arr">→</span></div>
+              </div>
+              <p class="rec-group">十 月</p>
+              <div class="rec">
+                <div><h3>普通的一顿饭</h3><p class="meta">10 月 28 日 · 4 分钟 · 已成篇</p></div>
+                <div class="r"><span class="pill">已收进第一章</span><span class="arr">→</span></div>
+              </div>
+              <div class="rec">
+                <div><h3>熟悉的声音</h3><p class="meta">10 月 21 日 · 3 分钟 · 已成篇</p></div>
+                <div class="r"><span class="pill">已收进第一章</span><span class="arr">→</span></div>
+              </div>
+              <div class="rec">
+                <div><h3>闲下来做什么</h3><p class="meta">10 月 14 日 · 5 分钟 · 已成篇</p></div>
+                <div class="r"><span class="pill">已收进第一章</span><span class="arr">→</span></div>
+              </div>
+              <p class="rec-group">九 月</p>
+              <div class="rec">
+                <div><h3>小时候的玩伴</h3><p class="meta">9 月 30 日 · 3 分钟 · 已成篇</p></div>
+                <div class="r"><span class="pill">已收进第一章</span><span class="arr">→</span></div>
+              </div>
+              <div class="rec-more">更早的记录 →</div>
+            </div>
+            <nav class="nav">
+              <span class="it"><svg><use href="#i-map"/></svg>轨迹</span>
+              <span class="it"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg class="mwave"><use href="#i-wave"/></svg></span><span>小暖</span></span>
+              <span class="it"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it on"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>讲述记录</b><span>10 / RECORDS</span></figcaption>
+        <p class="shot-note"><b>按“还没整理 / 已成篇”分组。</b>未完成的记录直接给“继续整理”，不让人翻进去找。</p>
+      </figure>
+
+      <!-- 09 我的 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="htitle" style="font-size:17px">我的</span><span class="act">帮助</span></div>
+            <div class="prof-id"><span class="prof-avatar">李</span><div><h2>李秀兰</h2><p>已经讲了 8 次，写下 12 个故事</p></div></div>
+            <div class="stats">
+              <div><b>12</b><span>个故事</span></div>
+              <div><b>3</b><span>章已写完</span></div>
+              <div><b>1.2</b><span>万字</span></div>
+            </div>
+            <div class="pgroup">
+              <p class="pgroup-title">阅 读 与 听 觉</p>
+              <div class="prow"><span class="lbl">字大一点<small>只放大正文和按钮，不放大装饰</small></span><span class="seg"><span>标准</span><span class="on">大</span><span>特大</span></span></div>
+              <div class="prow"><span class="lbl">读给我听<small>打开后，故事可以自动朗读</small></span><span class="switch"></span></div>
+            </div>
+            <div class="pgroup">
+              <p class="pgroup-title">我 的 内 容</p>
+              <div class="prow"><span class="lbl">讲述记录</span><span class="val">3 条待整理</span><span class="arr">›</span></div>
+              <div class="prow"><span class="lbl">家人共享</span><span class="val">小敏等 2 人</span><span class="arr">›</span></div>
+            </div>
+            <div class="pgroup">
+              <p class="pgroup-title">账 号</p>
+              <div class="prow"><span class="lbl">账号与安全</span><span class="arr">›</span></div>
+              <div class="prow"><span class="lbl">隐私与录音</span><span class="arr">›</span></div>
+            </div>
+            <p class="logout">退出登录</p>
+            <nav class="nav">
+              <span class="it"><svg><use href="#i-map"/></svg>轨迹</span>
+              <span class="it"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg class="mwave"><use href="#i-wave"/></svg></span><span>小暖</span></span>
+              <span class="it"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it on"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>我的</b><span>11 / PROFILE</span></figcaption>
+        <p class="shot-note"><b>把“字号、朗读”放到最显眼的位置。</b>不是藏在设置里，而是“我的”第一组，让长辈自己能改。</p>
+      </figure>
+
+      <!-- 10 家人 -->
+      <figure class="shot">
+        <div class="phone-wrap">
+          <div class="scr">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="batt"></span></span></div>
+            <div class="hd"><span class="htitle" style="font-size:17px">家人</span><span class="act" style="visibility:hidden">管理</span></div>
+            <div class="fam-body">
+              <p class="fam-kicker">给 家 里 人</p>
+              <h1 class="fam-title">把这本书，<br>读给家人听。</h1>
+              <p class="fam-sub">家人可以读、可以留一句话，但不能改您的故事。</p>
+              <div class="fam-book">
+                <div class="thumb">把平常<br>的日子<br>记下来</div>
+                <div>
+                  <h3>《把平常的日子记下来》</h3>
+                  <p>12 个故事 · 3 章 · 最近更新 11 月 2 日</p>
+                  <span class="perm"><svg><use href="#i-lock"/></svg>只读 · 不会看到您的账号信息</span>
+                </div>
+              </div>
+              <div class="fam-actions">
+                <button class="btn-p">发给微信家人</button>
+                <button class="btn-s">复制只读链接</button>
+              </div>
+              <div class="fam-link"><span>二维码邀请</span><span>查看 ›</span></div>
+              <div class="fam-people">
+                <span class="avs"><i>敏</i><i>弟</i></span>
+                <p><b>已分享给 2 位家人</b><br>小敏、弟弟 · 只读，不改原文</p>
+                <span class="manage">查看</span>
+              </div>
+              <div class="fam-comment">
+                <div class="who"><b>小敏（女儿）</b>· 今天 09:40</div>
+                <p>“妈，我也记得那条路。梧桐叶落一地，扫都扫不完。”</p>
+              </div>
+              <div class="fam-info">家人打开链接后可以直接读，不用注册、不用下载。他们留的话只会出现在故事下面，不会改动原文。</div>
+            </div>
+            <nav class="nav">
+              <span class="it"><svg><use href="#i-map"/></svg>轨迹</span>
+              <span class="it"><svg><use href="#i-book"/></svg>传记</span>
+              <span class="mic"><span class="disc"><svg class="mwave"><use href="#i-wave"/></svg></span><span>小暖</span></span>
+              <span class="it on"><svg><use href="#i-family"/></svg>家人</span>
+              <span class="it"><svg><use href="#i-user"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="shot-cap"><b>家人</b><span>12 / FAMILY</span></figcaption>
+        <p class="shot-note"><b>只读分享，边界先讲清。</b>一个主操作（发给微信家人），一条家人回话——不把分享做成社交压力。</p>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- ══════════ 06 桌面 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">06</span><h2>桌面阅读</h2><span>Desktop · 1280</span></div>
+      <p class="sec-desc">不是把手机版拉宽：左侧目录、中间书页、右侧进度与朗读；正文每行 28–30 字，字号 18.5px。</p>
+    </div>
+    <div class="desktop-frame">
+      <div class="dt">
+        <div class="dt-bar">
+          <div class="dt-brand"><span class="seal">慢</span>慢记</div>
+          <div class="dt-crumb">我的传记 / <b>第一章 · 老巷里的童年</b></div>
+          <div class="dt-actions"><span class="dt-btn">Aa 字号</span><span>朗读</span><span>分享</span></div>
+        </div>
+        <div class="dt-body">
+          <aside class="dt-side">
+            <div class="dt-cover"><b>把平常的日子记下来</b><span>您口述 · 小暖整理</span></div>
+            <div class="dt-toc">
+              <h4>目 录</h4>
+              <a class="on"><em>01</em> 老巷里的童年</a>
+              <a><em>02</em> 少年时的学习</a>
+              <a><em>03</em> 青年时的生活</a>
+              <a><em>04</em> 成年后的日子</a>
+              <a><em>05</em> 中年生活与变化</a>
+            </div>
+          </aside>
+          <main class="dt-main">
+            <p class="chapno">第 一 章</p>
+            <h1>老巷里的童年</h1>
+            <div class="orn"><span>慢 记</span></div>
+            <p class="body lead"><span class="drop">说</span>起小时候，我先想起家门前的那条窄巷。两旁的房子挨得近，巷口有一棵树，再往外是几家小铺。天热时，邻居搬着凳子出来坐，择菜、收衣服，缺什么便隔着门招呼一声。</p>
+            <p class="body">放学回来，我把书包放下就去找伙伴，常在巷子里跑得忘了时间。听见奶奶喊吃饭，才匆匆往家赶。如今再想那条巷子，最清楚的还是回家时这几步路。</p>
+            <p class="body">晚饭常是米饭、青菜和萝卜汤，偶尔添一盘鸡蛋。奶奶坐窗边，父亲坐门边，我挨着母亲，饭前把长短相近的筷子分好。</p>
+            <div class="foot"><span>— 12 —</span><span>来自 11 月 2 日的讲述 · 已修订</span></div>
+          </main>
+          <aside class="dt-rail">
+            <div class="pct">34%<span>已 读</span></div>
+            <div class="vbar"><i></i></div>
+            <div class="rb"><svg><use href="#i-text"/></svg>字号</div>
+            <div class="rb"><svg><use href="#i-speaker"/></svg>朗读</div>
+            <div class="rb"><svg><use href="#i-share"/></svg>分享</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 07 状态与组件 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">07</span><h2>状态与组件</h2><span>States &amp; Components</span></div>
+      <p class="sec-desc">老年人最怕“不知道现在怎么了”。每个动作都要有可见的、说人话的状态，不用颜色单独表意。</p>
+    </div>
+    <div class="demo-grid">
+      <div class="demo-card">
+        <h4>按钮 / 三种层级</h4>
+        <div class="demo-stack">
+          <div class="demo-btn primary">说完了，帮我整理</div>
+          <div class="demo-btn second">先停一下</div>
+          <div class="demo-btn ghost">改用打字</div>
+          <div class="demo-btn disabled">正在整理…</div>
+        </div>
+      </div>
+      <div class="demo-card">
+        <h4>话题 / 四种状态</h4>
+        <div class="demo-row"><b>住过的地方</b><span class="pill">已成篇</span></div>
+        <div class="demo-row"><b>普通的一顿饭</b><span class="pill new">还没讲</span></div>
+        <div class="demo-row"><b>常走的一条路</b><span class="pill wip">讲到一半</span></div>
+        <div class="demo-row"><b>熟悉的声音</b><span class="pill wip">整理失败</span></div>
+      </div>
+      <div class="demo-card">
+        <h4>讲述 / 四种反馈</h4>
+        <div class="demo-row"><b>小暖在听</b><span style="color:#4e6a57">● 正在听</span></div>
+        <div class="demo-row"><b>暂停</b><span>已保存 · 可继续</span></div>
+        <div class="demo-row"><b>没听清</b><span style="color:#a8432a">再说一遍 / 打字</span></div>
+        <div class="demo-toast"><span>✓</span> 网络不稳，您说的话已经保存</div>
+      </div>
+      <div class="demo-card">
+        <h4>字号与离开确认</h4>
+        <div class="demo-sheet">
+          <div class="bar"></div>
+          <div style="font-size:11px;color:#73675a;margin-bottom:8px">正文字号</div>
+          <div class="size-row"><span>标准</span><span class="on">大</span><span>特大</span></div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(39,33,27,.12);font-size:11px;color:#5a5046">现在先停一下吗？讲过的都会保存。</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+            <div class="demo-btn second" style="height:38px;font-size:12px">先停一下</div>
+            <div class="demo-btn primary" style="height:38px;font-size:12px">继续讲</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="subhead"><b>文案对照</b><span>同一件事，换一种让长辈敢按下去的说法</span></div>
+    <div class="copy-table">
+      <div class="copy-row head"><span>场景</span><span>现在的说法</span><span>新版的说法</span></div>
+      <div class="copy-row"><span>开始</span><span class="old">开始讲述</span><span class="new"><b>开始讲这段</b></span></div>
+      <div class="copy-row"><span>结束</span><span class="old">结束并整理</span><span class="new"><b>说完了，帮我整理</b></span></div>
+      <div class="copy-row"><span>等待</span><span class="old">生成中…</span><span class="new"><b>正在把您的话，理成一页故事</b></span></div>
+      <div class="copy-row"><span>空状态</span><span class="old">暂无内容</span><span class="new"><b>这里还没有故事，想到什么就聊一点</b></span></div>
+      <div class="copy-row"><span>失败</span><span class="old">操作失败，请重试</span><span class="new"><b>这次没整理好，您说的话都还在</b></span></div>
+      <div class="copy-row"><span>隐私</span><span class="old">请阅读隐私政策</span><span class="new"><b>录音只用来整理您的故事，不会公开</b></span></div>
+    </div>
+  </section>
+
+  <!-- ══════════ 08 适老与验收 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">08</span><h2>适老与验收</h2><span>Accessibility</span></div>
+      <p class="sec-desc">不是“字大一点”就够。下面是这次设计的硬指标，也是上线前逐条验收的清单。</p>
+    </div>
+    <div class="check-grid">
+      <div class="check-item"><span class="mark">✓</span><b>正文 19px / 行高 1.8+</b><span>19 / 34</span><p>阅读与故事正文 19px；按钮 18px；导航 13px 只用于辅助。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>对比度 ≥ 4.5:1</b><span>14.2 / 5.3</span><p>正文 14.2:1；最浅的辅助字 4.9:1；朱砂按钮上的白字 6.0:1。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>主操作 60px，列表 72px</b><span>60 / 72 / 44</span><p>主按钮 60，次按钮 54，列表行 ≥72，图标按钮 ≥44 且带文字。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>字号三档可调 + 朗读</b><span>19 / 23 / 27</span><p>标准、大、特大；只放大正文与按钮，不放大装饰；朗读兜底。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>不用横向滚动</b><span>0</span><p>章节、话题、记录全部竖排；不把“下一章”藏在横滑里。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>图标都带文字</b><span>5 / 5</span><p>底部 5 个入口都有文字标签；不使用只有图形的按钮。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>自动保存，随时能停</b><span>每轮</span><p>讲述每一轮都保存；暂停、返回、关页都不丢；回来自动恢复。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>可打字替代语音</b><span>常驻</span><p>准备页与讲述页都保留“改用打字”，不把不会用麦克风的人挡在门外。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>没有倒计时与广告</b><span>0 / 0</span><p>不催、不弹广告、不诱导分享；分享入口只出现一次。</p></div>
+      <div class="check-item"><span class="mark">✓</span><b>焦点可见 / 动效克制</b><span>2px / 240ms</span><p>键盘焦点 2px 朱砂描边；动效 ≤240ms；尊重 prefers-reduced-motion。</p></div>
+    </div>
+    <div class="bigtype">
+      <div class="bt"><p class="lab">标 准</p><p class="sample" style="font-size:19px">说起小时候，我先想起家门前的那条窄巷。</p><p class="meta">19px / 1.84</p></div>
+      <div class="bt"><p class="lab">大（默认推荐）</p><p class="sample" style="font-size:23px">说起小时候，我先想起家门前的那条窄巷。</p><p class="meta">23px / 1.8</p></div>
+      <div class="bt"><p class="lab">特 大</p><p class="sample" style="font-size:27px">说起小时候，我先想起家门前的那条窄巷。</p><p class="meta">27px / 1.75</p></div>
+    </div>
+  </section>
+
+  <!-- ══════════ 09 落地 ══════════ -->
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-title"><span class="sec-no">09</span><h2>怎么落地</h2><span>Rollout</span></div>
+      <p class="sec-desc">不推翻现有交互与接口，先换皮与结构，再补状态。四步走，每步都可单独上线。</p>
+    </div>
+    <div class="plan">
+      <div class="plan-card"><span class="ph">phase 01</span><h4>基础</h4><p>tokens.css、按钮、导航、列表行、纸面容器；替换现有零散字号与颜色。</p><code>styles/tokens.css<br>components/AppNav.vue</code></div>
+      <div class="plan-card"><span class="ph">phase 02</span><h4>讲述</h4><p>首页“接着讲”、准备页、讲述态、整理态；复用现有 API 与状态机。</p><code>ConnectedHomePage.vue<br>ConnectedInterviewPage.vue<br>ConnectedOrganizingPage.vue</code></div>
+      <div class="plan-card"><span class="ph">phase 03</span><h4>书</h4><p>封面、故事页、阅读页、字号与朗读；先做移动端，桌面后置。</p><code>ConnectedStoryPage.vue<br>ConnectedLibraryPage.vue</code></div>
+      <div class="plan-card"><span class="ph">phase 04</span><h4>其余</h4><p>记录分组、我的无障碍设置、家人只读分享、桌面双栏。</p><code>ConnectedHistoryPage.vue<br>ConnectedUtilityPage.vue<br>media queries ≥1024</code></div>
+    </div>
+    <div class="mapping">
+      <div class="map-row head"><span>页面</span><span>落点</span><span>说明</span></div>
+      <div class="map-row"><b>首页 / 章节</b><code>ConnectedHomePage.vue · ChapterTopics.vue</code><span>去掉横滑时间轴，改为章节条 + 页目</span></div>
+      <div class="map-row"><b>准备 / 讲述 / 整理</b><code>ConnectedInterviewPage.vue · ConnectedOrganizingPage.vue</code><span>新增准备屏与浅色聆听态；保留现有会话状态</span></div>
+      <div class="map-row"><b>故事 / 封面 / 阅读</b><code>ConnectedStoryPage.vue · ConnectedLibraryPage.vue</code><span>封面为新增视图；阅读加字号、朗读、出处</span></div>
+      <div class="map-row"><b>记录 / 我的 / 家人</b><code>ConnectedHistoryPage.vue · ConnectedUtilityPage.vue</code><span>记录分组；我的加字号与朗读；家人只读分享</span></div>
+      <div class="map-row"><b>桌面</b><code>现有页面的 ≥1024 断点</code><span>不做第二套页面；目录 + 书页 + 进度三栏</span></div>
+    </div>
+    <div class="notdo">
+      <div><b>不做深色主界面</b>白内障、老花在深底上对比更差。夜读只能作为可选模式，默认仍是纸面。</div>
+      <div><b>不做以照片为骨架</b>照片是加分项，不是结构。没有照片的用户也不能看到空相册；A 用文字和排版承担结构。</div>
+      <div><b>不做拟物翻页动画</b>慢、晕、打断阅读。用淡入、纸页阴影和批注式转场就够了。</div>
+    </div>
+  </section>
+
+  <footer class="footer-note">
+    <div><b>慢记 · 方向 A「纸墨」</b>　完整方案 / 2026.11</div>
+    <div>下一步：先落 tokens + 首页 / 讲述 / 阅读三屏，验证后再铺其余页面</div>
+  </footer>
+</main>
+</body>
+</html>

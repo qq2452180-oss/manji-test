@@ -1,0 +1,37 @@
+
+.tell-safe-header { position:fixed; z-index:9; top:0; right:0; left:0; background:#F6F1E8; pointer-events:none; }
+.tell-page > .paper-title { margin:9px 0 10px; font-size:25px; }
+.tell-page .photo-interview-card { display:flex; align-items:center; gap:14px; width:100%; min-height:80px; margin-top:24px; padding:16px; border:1px solid #DDD0C2; border-radius:12px; background:#FFFCF7; color:#5E5247; }
+.photo-interview-icon { display:flex; flex:none; align-items:center; justify-content:center; width:44px; height:44px; border-radius:10px; background:#F2EADF; color:#A3523A; }
+.photo-interview-icon svg { width:26px; height:26px; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.photo-interview-label { flex:1; min-width:0; font-size:18px; font-weight:500; overflow-wrap:anywhere; }
+.photo-interview-arrow { flex:none; width:22px; height:22px; color:#9B8877; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.tell-page .photo-interview-card:focus-visible { outline:3px solid #477568; outline-offset:4px; }
+@media(hover:hover) { .tell-page .photo-interview-card:hover { border-color:#BDA68F; background:#FFFDF9; } }
+.tell-page .draft-card { margin:16px 0 24px; padding:18px; border:1px solid #DDD0C2; border-radius:12px; background:#FFFCF7; }
+.draft-card-header { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.draft-card-icon { display:flex; flex:none; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:#F2EADF; color:#A3523A; }
+.draft-card-icon svg { width:20px; height:20px; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.draft-card-title { color:#5E5247; font-size:15px; font-weight:500; }
+.draft-card-kind { margin-left:auto; color:#776D64; font-size:13px; }
+.draft-card-preview { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; max-height:3.5em; margin-top:14px; overflow:hidden; overflow-wrap:anywhere; color:#5E5247; font-size:16px; line-height:1.75; }
+.draft-card-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; margin-top:18px; }
+.draft-card-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; font-size:15px; }
+.draft-card-history { padding:8px 0; color:#776D64; }
+.draft-card-continue { gap:10px; margin-left:auto; padding:8px 16px; border:1px solid #BDA68F; border-radius:9px; color:#8B4C36; background:transparent; }
+.draft-card-continue svg { width:18px; height:18px; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.draft-card-actions a:focus-visible { outline:3px solid #477568; outline-offset:4px; }
+@media(hover:hover) { .draft-card-continue:hover { background:#F2EADF; } .draft-card-history:hover { color:#8B4C36; text-decoration:underline; text-underline-offset:4px; } }
+.tell-page button.organization-notice { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:5px; min-height:52px; width:100%; margin-top:12px; padding:10px 12px; background:#E9EEE7; border:0; border-radius:8px; color:#477568; font-size:14px; text-align:left; }
+.tell-page button.organization-notice::after { border:0; }
+.soft-notice { padding:12px 0; color:#9E4A3A; font-size:14px; line-height:1.7; }
+.recent-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:11px; }
+.recent-heading > .paper-section-title { margin:0; }
+.recent-heading > .paper-link { font-size:14px; }
+.tell-page button.recent-story { display:flex; align-items:center; gap:10px; width:100%; min-height:65px; padding:13px 0; border:0; border-bottom:0.5px solid #E0D7CD; border-radius:0; background:transparent; text-align:left; }
+.tell-page button.recent-story::after { border:0; }
+.recent-copy { flex:1; min-width:0; }
+.recent-title { display:block; margin-bottom:5px; font-family:"Songti SC","STSong",serif; font-size:19px; font-weight:600; line-height:1.6; overflow-wrap:anywhere; }
+.recent-arrow { color:#9B8877; font-size:20px; }
+.empty-stories { padding:12px 0 20px; }
+.empty-heading { display:block; margin-bottom:7px; font-size:17px; }

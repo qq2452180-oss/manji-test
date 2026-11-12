@@ -1,0 +1,81 @@
+/* Converted from the corresponding wx book cover and reading pages. */
+.book-cover { position:relative; display:grid; overflow:hidden; box-sizing:border-box; width:100%; border:0.5px solid rgba(86,66,45,.18); border-radius:2.5px 8px 8px 2.5px; background:#e8dfce; color:#4a4035; box-shadow:4px 6px 12px rgba(55,43,29,.10); }
+.cover-ratio { grid-column:1; grid-row:1; padding-top:138%; }
+.cover-spine { position:absolute; top:0; bottom:0; left:7.5px; width:4px; border-left:0.5px solid rgba(255,255,255,.4); border-right:0.5px solid rgba(65,47,30,.12); background:rgba(78,59,39,.04); }
+.cover-content { position:relative; grid-column:1; grid-row:1; display:flex; flex-direction:column; align-items:center; min-width:0; padding:18px 16px 14px 22px; text-align:center; }
+.cover-imprint { color:inherit; opacity:.7; font-size:14px; line-height:1.5; letter-spacing:1px; }
+.cover-title-block { margin-top:15px; width:100%; }
+.cover-title { display:block; font-family:"Songti SC","STSong","SimSun",serif; font-size:23px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
+.cover-subtitle { display:block; margin-top:8px; font-size:14px; line-height:1.6; opacity:.8; overflow-wrap:anywhere; }
+.cover-photo { flex:1; min-height:20px; max-height:95px; width:100%; margin:14px 0 10px; border:3px solid rgba(255,255,255,.62); }
+.cover-rings { flex:1; position:relative; min-height:32px; width:70%; max-height:95px; margin:13px 0 9px; }
+.cover-ring { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border:0.5px solid currentColor; border-radius:50%; opacity:.38; }
+.cover-ring-one { width:68px; height:68px; }.cover-ring-two { width:53px; height:56px; }.cover-ring-three { width:36px; height:41px; }
+.cover-author { max-width:100%; margin-top:auto; padding-top:10px; font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
+.cover-rule { width:32px; height:0.5px; margin-top:10px; background:currentColor; opacity:.4; }
+.cover-terracotta { background:#dfb39b; color:#51382c; }.cover-sage { background:#d3dacd; color:#3d4e3f; }.cover-ink { background:#34463d; color:#f4e9d7; border-color:#293c31; }
+.is-compact .cover-content { padding:12px 10px 10px 15px; }.is-compact .cover-imprint { font-size:14px; letter-spacing:0; }.is-compact .cover-title-block { margin-top:10px; }.is-compact .cover-title { font-size:18px; }.is-compact .cover-subtitle { display:none; }.is-compact .cover-rings { margin:8px 0; }.is-compact .cover-ring-one { width:48px; height:48px; }.is-compact .cover-ring-two { width:37px; height:40px; }.is-compact .cover-ring-three { width:25px; height:29px; }.is-compact .cover-photo { margin:9px 0; max-height:60px; }.is-compact .cover-rule { margin-top:6px; }
+.has-long-copy .cover-title { font-size:19px; }.is-compact.has-long-copy .cover-title { font-size:16px; }.has-long-copy .cover-title-block { margin-bottom:10px; }.has-long-copy .cover-photo { flex:none; height:60px; margin:9px 0; }.has-long-copy .cover-author { margin-top:auto; }
+.cover-large-type .cover-title { font-size:24px; }.cover-large-type.is-compact .cover-title { font-size:19px; }.cover-large-type .cover-imprint,.cover-large-type .cover-subtitle,.cover-large-type .cover-author { font-size:16px; }
+
+.book-heading { margin:2px 0 15px; }
+.book-display { width:195px; margin:0 auto 14px; }
+.book-stats { display:flex; flex-wrap:wrap; justify-content:center; gap:4px 12px; margin:0 0 20px; color:#776D64; font-size:14px; }
+.contents-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-top:6px; border-top:0.5px solid #DFD4C8; }
+.contents-heading .paper-section-title { margin:10px 0; }
+.biography-page .chapter-row { display:flex; align-items:flex-start; gap:11px; width:100%; min-height:65px; padding:14px 0; border-radius:0; border:0; border-bottom:0.5px solid #E0D7CD; background:transparent; text-align:left; }
+.biography-page .chapter-row::after { border:0; }
+.chapter-number { flex:none; padding-top:4px; font-size:14px; color:#A3523A; }
+.chapter-copy { flex:1; min-width:0; }
+.chapter-title { display:block; margin-bottom:5px; font-family:"Songti SC","STSong",serif; font-weight:600; font-size:19px; line-height:1.6; overflow-wrap:anywhere; }
+.chapter-excerpt { display:-webkit-box; overflow:hidden; -webkit-line-clamp:2; -webkit-box-orient:vertical; margin-top:6px; color:#776D64; font-size:14px; line-height:1.7; }
+.chapter-arrow { flex:none; color:#9B8877; font-size:20px; }
+.empty-chapter { color:#A3523A; font-size:26px; font-family:"Songti SC","STSong",serif; }
+.continue-link { justify-content:space-between; margin-top:9px; }
+
+.chapter-page { padding-top:18px; }
+.chapter-summary { margin:14px 0 18px; padding-left:12px; border-left:1.5px solid #D9B09D; color:#776D64; font-size:15px; line-height:1.85; }
+.chapter-story { padding:18px 0 8px; border-top:0.5px solid #DFD4C8; }
+.chapter-story-title { margin:5px 0 14px; font-family:"Songti SC","STSong",serif; font-size:20px; line-height:1.6; font-weight:600; overflow-wrap:anywhere; }
+.chapter-photo { max-height:400px; }
+.photo-placeholder { padding:25px 12px; text-align:center; }
+.story-link { justify-content:space-between; }
+.book-link { margin-top:12px; color:#776D64; }
+
+.continue-reading { margin:12px 0; }
+
+.story-page { padding:18px 18px calc(27px + env(safe-area-inset-bottom)); }
+.story-state { padding:14px 0; background:transparent; border:0; }
+.state-title { margin-bottom:9px; font-size:19px; font-weight:600; line-height:1.6; }
+.state-action { margin-top:15px; }
+.story-intro { margin-bottom:7px; color:#8B6D58; font-size:14px; }
+.story-title { display:block; font-family:'Songti SC','STSong',serif; font-size:24px; font-weight:600; line-height:1.55; overflow-wrap:anywhere; }
+.story-date { margin-top:9px; color:#776D64; font-size:14px; }
+.story-photos { margin:18px 0; }
+.story-photo-image { display:block; width:100%; height:250px; border-radius:8px; background:#EAE1D6; }
+.story-photo-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:150px; border-radius:8px; background:#EEE6DC; color:#776D64; font-size:14px; text-align:center; }
+.story-photo-retry,.story-photo-step { display:flex; align-items:center; justify-content:center; min-height:52px; padding:9px 8px; background:transparent; color:#A3523A; font-size:14px; }
+.story-page .story-photo-retry,.story-page .story-photo-step { width:auto; margin:0; }
+.story-photo-retry::after,.story-photo-step::after { border:0; }
+.story-photo-step[disabled] { color:#A79B8E; }
+.story-photo-controls { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+.story-photo-count,.story-photo-hint { color:#776D64; font-size:14px; line-height:1.7; }
+.story-body { margin-top:16px; padding:0; background:transparent; }
+.story-paragraph { display:block; margin-bottom:16px; font-size:18px; line-height:1.95; color:#2E2925; overflow-wrap:anywhere; white-space:pre-wrap; }
+.story-paragraph:last-child { margin-bottom:0; }
+.return-link { display:flex; align-items:center; justify-content:center; width:100%; min-height:52px; margin:19px 0 0; padding:10px 0; border-radius:0; border-top:0.5px solid #DFD4C8; background:transparent; color:#A3523A; font-size:15px; }
+.return-link::after { border:0; }
+
+.biography-page .chapter-row { display:flex; text-decoration:none; }
+.chapter-page .material-photo { display:block; width:100%; height:auto; padding:0; margin:10px 0; min-height:150px; max-height:400px; color:#776D64; background:#EAE1D6; border-radius:8px; overflow:hidden; }
+.chapter-page .material-photo img { width:100%; height:auto; max-height:400px; object-fit:contain; }
+.story-photos .material-photo { display:flex; align-items:center; justify-content:center; width:100%; height:250px; padding:0; border-radius:8px; background:#EAE1D6; color:#776D64; }
+.story-photos .material-photo img { width:100%; height:100%; object-fit:contain; }
+.book-link,.story-link,.continue-link { display:flex; }
+.paper-state:empty { padding:0; }
+.trial-result { margin-top: 36px; padding: 28px 20px; border-radius: 18px; background: #f7e9dd; text-align: center; }
+.trial-result h2 { margin: 12px 0; }
+.trial-result .paper-button { margin-top: 20px; }
+.trial-session-note { margin-top: 14px; font-size: 13px; }
+.trial-preview-note { margin-bottom:24px; padding:16px; border-radius:12px; background:#eee9da; color:#79634e; font-size:14px; line-height:1.8; }
+.trial-preview-note .paper-link { display:inline-flex; align-items:center; min-height:44px; margin-top:4px; }

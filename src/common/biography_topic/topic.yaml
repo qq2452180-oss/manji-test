@@ -1,0 +1,864 @@
+# 慢记 · 人生传记话题库 V2
+# 原 V1 的 30 个话题 ID 全部保留；每个话题 4 个结构化探索维度。
+# 本次调整：以容易回答的生活线索进入传记访谈，再沿真实讲述展开具体经历；保持 V2 结构和全部 ID。
+# 字段迁移：name -> label；字符串 dimensions -> {id, intent, seed, probe}。
+# description 的探索目标已融入各维度 intent；原 risk 的关键边界转入 requires、usage_rules 和 intent。
+# 全局规则与当前所选话题应一起传给调用方；不要每轮把整库塞入访谈上下文。
+# 配置本身不执行判断：读取服务需适配 V2 字段，并在选题和追问前检查事实及当前意愿。
+# 所有问句只是参考，不是固定脚本；不新增 Agent、Graph 节点或模型调用要求。
+# 五阶段编码与项目公共定义保持一致；本文件不修改数据库章节 ID 或经历记录。
+
+version: 2
+stage_labels:
+  childhood: 童年
+  adolescence: 少年
+  youth: 青年
+  middle_age: 中年
+  old_age: 晚年
+scope_rules:
+  stage_bound: 话题限定于部分人生阶段；stages 为五个基础阶段的非空真子集。
+  cross_stage: 话题不限定人生阶段；stages 明确列出全部五个基础阶段，不使用 all。
+fact_gate_rules:
+  none: 无额外事实前置条件，可用不预设经历的开放切口进入；不代表可以把示例或探索维度当成已发生事实。
+  known_only: 仅在 requires 描述的事实有可靠确认依据时使用；事实未知、存在未解决冲突或已明确不适用时，不使用依赖该事实的维度或话题。
+sensitivity_levels:
+  low: 通常可作为开放候选，但不保证对每个人都轻松；出现拒绝、痛苦或敏感线索时立即调整，不继续按默认低敏感处理。
+  medium: 涉及较私人的关系或生活变化；满足事实门槛后也只轻量进入，不因画像已知就深挖，跟随用户愿意展开的内容。
+  high: 不作为无明确意图时的主动推荐；仅在用户本次主动提出、明确选择或确认继续时进入。历史记录、过去的同意和事实确认都不等于本次愿意谈。
+usage_rules:
+  - 人生阶段共用 childhood、adolescence、youth、middle_age、old_age 五个编码。stage_labels 只是其中文显示映射；读取服务须用项目的公共阶段定义校验，不能另建独立阶段口径。
+  - unknown 仅用于经历索引的阶段未知，life_reflection 仅用于“人生回望”章节；二者均不能出现在 topic.stages 中，也不能把阶段未知自动归入人生回望。
+  - stages 描述要聊的经历发生阶段，不是用户当前年龄。不得按当前年龄屏蔽童年等回忆；没有可靠阶段依据时，不按阶段强行过滤或推定。
+  - stages 和 scope 用于组织主动候选，不限制用户真实经历；用户主动讲到配置范围外的经历时继续顺应，不改写用户事实，不按固定年龄或婚育、求学、退休事件倒推阶段。
+  - scope 与 stages 必须一致：全部五阶段对应 cross_stage，非空真子集对应 stage_bound；阶段不重复，按公共阶段顺序排列。
+  - 画像、人生经历索引和本轮用户明确讲述均可提供事实依据；当前更正优先于旧记录。画像和索引须能追溯用户确认，不把助手猜测、示例、照片推断或润色文稿当成确认。
+  - 画像未记录不等于没有经历；当前状态不等于完整历史。不能从年龄、性别、地区、职业、婚姻或子女等关联特征推定其他经历。
+  - 每个话题明确声明 fact_gate；known_only 必须有非空 requires，none 不填写 requires。维度不声明时无新增门槛；声明 known_only 时，其 requires 是在话题条件之外追加的条件。
+  - 话题和维度的事实条件取交集。维度不能取消或降低话题门槛；任一事实条件未满足时，不使用该维度。requires 仅描述条件，不代表读取配置就能自动完成事实判断。
+  - 未知事实只在当前对话自然需要时中性确认，不为了打开话题库逐项询问个人资料；不能确认时选择不依赖该事实的候选。明确不适用或不愿谈时跳过，不追问原因。
+  - 事实门槛与敏感度分别判断且必须同时满足；已知经历不等于愿意谈。拒绝、换题、暂停、闲聊和更正优先于既定计划，允许自然回应而不追问。
+  - high 话题只有当前明确意愿才可进入；以前约定继续时，本次先确认是否还愿意。高敏感片段出现在其他话题时同样按此原则处理，不能沿用原话题 low 标签继续深挖。
+  - 传记访谈从容易回答的生活背景进入，沿用户实际提到的人物、地方、活动或物件，逐步展开一段经历。第一问允许用户只答一句话，不要求用户先找出一个完整故事；已有具体经历线索时直接顺接，不重复收集背景。
+  - 选择新话题入口时，同时考虑用户此刻能否接话。无事实门槛、低敏感不等于适合首问；优先给出一个明确的生活对象或环节，不让用户从整段人生中挑选“最深刻、最清楚、最重要的一刻”，也不以含糊的“哪个时候”或人生意义总结开场。
+  - 日常背景用于找到可展开的线索，不连续盘问作息或个人资料。用户讲出一种习惯或常做的事后，再顺着其中的人、动作或情形邀请讲一次实际经历；允许普通的一次，不强求首次、特殊事件或转折。细节随讲述逐步询问，记不清时不反复要求搜索记忆。
+  - dimensions 是候选方向，不是问卷、顺序或必填项；用户正在讲具体故事时先顺接内容，不为使用维度而转场。每轮最多一个自然问题，也允许没有问题。
+  - intent 表达探索目的；seed 是维度切入示例，不保证适合零上下文开场；probe 是在前一回答支持前提后的追问示例，不必与 seed 成对使用。先满足事实条件，再结合当前讲述改写。
+  - 所有“那里”“那件事”“对方”“后来”“您说的”等指代必须有当前相关的事实依据。probe 中的人物、做法、变化和后续也须由用户回答支持；没有相应信息就跳过或改为不预设的开放表达。
+  - 参考问句统一使用“您”。实际回复使用用户认可的人物称谓和已知事实，不机械念出“家人或照料者”“看到或听说”等备选表达；不重复用户已经明确回答的问题。
+  - 不因选中了某个维度就认定发生过困难、失败、互助、转折、变化或成功；不预设婚礼、同居、子女、工资、学历、养老金或亲属健在。人物事实优先，关系和感受由用户自己表达。
+  - 不强求第一次、精确年份、原话、圆满结局、感恩、释怀或人生升华；用户记不清时保留不确定性。普通小事、独处、未完成或没有明显变化的经历同样可以记录。
+  - 敏感经历不用于补齐传记覆盖率；不主动追问未展开的疾病、债务、创伤、生育、失联或关系破裂细节，不索取住址、存款等无关隐私。是否讲述与是否写入、公开分别处理。
+  - 一个话题可产生多个人生经历索引，一个索引可关联多篇故事；话题涉及过不等于完成，未涉及不等于必须补访。本配置不保存用户信息、访谈进度或固定多轮脚本。
+  - 话题数据、候选计划和参考问句都不是用户原始材料，不能仅因加载到上下文就写入人物画像、经历索引或故事正文；新增事实仍须依据用户实际讲述。
+
+topics:
+
+  # 01 · 小时候住过的地方
+  - id: childhood_hometown
+    label: 小时候住过的地方
+    stages: [childhood, adolescence]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: place
+        intent: 先了解用户小时候生活的地方，再顺着回答进入具体的生活空间；不预设城乡、房屋归属或固定住处。
+        seed: 您小时候主要是在什么地方长大的？
+        probe: 您那时住的地方是什么样的？
+      - id: road
+        intent: 从一段熟悉的路，探索沿途的人、事物和生活片段。
+        seed: 小时候，有没有一段您经常走的路？
+        probe: 那条路是通向哪里的？
+      - id: incident
+        intent: 从用户已提到的地方及常做的事情进入，再顺着其中一次展开具体经过。
+        seed: 在您说的那个地方，您平时会做些什么？
+        probe: 能拿其中一次来说说，您当时先做了什么？
+      - id: revisit
+        intent: 了解后来重访或听说此地的印象，与早年的记忆作比较，不预设变化或惊讶。
+        fact_gate: known_only
+        requires: 已确认用户后来回到过该地，或听人说起过该地的近况；按实际来源选择“回去看到”或“听人说起”的表达。
+        seed: 您后来看到或听说的那个地方，是什么样子？
+        probe: 和小时候记得的相比，有没有什么不同？
+
+  # 02 · 童年里一个普通的日子
+  - id: childhood_daily_life
+    label: 童年里一个普通的日子
+    stages: [childhood]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: moment
+        intent: 从早上醒来后的一件日常活动唤起回忆，再顺着用户讲出的动作了解当时的生活；不要求先挑选一个记忆深刻的时刻，也不要求完整复原一天。
+        seed: 小时候，您早上醒来一般会先做什么？
+        probe: 做这件事的时候，您通常在什么地方？
+      - id: routine
+        intent: 还原一件常做的事情及具体做法，不预设上学、三餐规律或生活条件。
+        seed: 小时候，您平时经常做些什么小事？
+        probe: 那件事通常是怎么做的？
+      - id: companions
+        intent: 根据实际共同生活情况了解身边人的活动，不默认有人照料或特定家庭分工。
+        seed: 您记得的那个时候，通常是自己待着，还是会和别人一起？
+        probe: 您说的那个人当时一般在忙什么？
+      - id: different_day
+        intent: 由用户选择一个与平常不同的日子，寻找具体经过。
+        seed: 有没有哪一天，和这样平常的日子有点不一样？
+        probe: 那天发生了什么，和平时不太一样？
+
+  # 03 · 小时候的玩耍与消遣
+  - id: childhood_play
+    label: 小时候的玩耍与消遣
+    stages: [childhood, adolescence]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: activity
+        intent: 从游戏、消遣或随手做的事情进入回忆，不要求有玩具或正式爱好。
+        seed: 小时候有空的时候，您会找些什么事做？
+        probe: 您说的这个，当时具体是怎么做的？
+      - id: company
+        intent: 了解独自玩耍或与人一起的实际方式，不预设好友或兄弟姐妹。
+        seed: 玩这个的时候，您一般是自己玩，还是有人一起？
+        probe: 那时您一般在哪里玩？
+      - id: episode
+        intent: 选择一次具体玩耍的经过，不预设快乐、意外或冲突。
+        seed: 能说说其中一次，您是怎么玩起来的吗？
+        probe: 接着您又做了什么？
+      - id: sensory_anchor
+        intent: 借助真实的物件、声音或地点唤起生活细节，不以提示替用户补全记忆。
+        seed: 玩这个时，需要用到什么东西吗？
+        probe: 您用的那个东西是什么样的？
+
+  # 04 · 与家人或照料者相处的记忆
+  - id: childhood_caregivers
+    label: 与家人或照料者相处的记忆
+    stages: [childhood, adolescence]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: medium
+    requires: 已确认用户童年或少年时期与某位家人、照料者共同生活或有实际照料关系；只能使用已确认的称谓，不能从亲属身份推定同住、照料或亲密。
+    dimensions:
+      - id: daily_contact
+        intent: 用已确认的人物称呼，了解当时的日常相处，不预设父母在场或关系亲密。
+        seed: 小时候，您和对方待在一起时，一般会做些什么？
+        probe: 做您说的这件事时，对方一般在做什么？
+      - id: habit
+        intent: 从对方的一个动作或习惯呈现人物，避免先作好坏评价。
+        seed: 您记得对方有什么常做的小动作或习惯吗？
+        probe: 对方一般在什么情况下会这样做？
+      - id: shared_episode
+        intent: 在用户提到共同做过的事情后，顺着其中一次还原相处经过，不主动寻找争执或伤害。
+        seed: 能说说和对方一起做这件事的某一次，是怎么开始的吗？
+        probe: 当时对方具体做了什么？
+      - id: remembered_expression
+        intent: 记录用户确实记得的话语或动作，允许只记得大意，不要求原句。
+        seed: 对方平时有没有常说的一句话？
+        probe: 对方一般在什么情况下会说这句话？
+
+  # 05 · 年节与日常里的习惯
+  - id: family_customs
+    label: 年节与日常里的习惯
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: custom
+        intent: 从用户实际过节的方式或日常习惯进入，没有特别过法也很正常；不默认特定节日、信仰或团聚。
+        seed: 以前过节的时候，您通常怎么过？
+        probe: 您说的这件事，一般会在什么地方做？
+      - id: preparation
+        intent: 根据已讲的习惯还原实际准备和做法，不预设丰盛、仪式或购买物品。
+        seed: 您说的这件事，当时一般是怎么做的？
+        probe: 其中有没有哪个步骤，是您自己参与的？
+      - id: participants
+        intent: 了解实际参与者及各自做的事情，不默认全家参与或固定分工。
+        seed: 做这件事时，还有别人一起吗？
+        probe: 您说的那个人，当时通常会做些什么？
+      - id: one_occasion
+        intent: 从重复的习惯中选出一次具体经历，不要求发生异常或转折。
+        seed: 就说其中一次吧，那次是在什么地方？
+        probe: 那次开始的时候，您在做什么？
+
+  # 06 · 在学校里的日子
+  - id: school_life
+    label: 在学校里的日子
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: known_only
+    sensitivity: low
+    requires: 已确认用户有学校就读经历；年龄、识字能力或职业不能代替确认。未确认时可使用“校园之外学会的一件事”，明确没有就读经历时不追问原因。
+    dimensions:
+      - id: school_place
+        intent: 先了解实际就读地点，再进入上课或活动的具体空间；不预设校园规模、教室条件或通学方式。
+        seed: 您那时是在什么地方上学？
+        probe: 当时上课的地方是什么样的？
+      - id: school_person
+        intent: 由用户选择实际接触过的老师或同学，不默认存在关系亲密或影响重大的师友。
+        seed: 那时候，有没有经常和您说话的老师或同学？
+        probe: 您和对方平时会聊些什么？
+      - id: school_activity
+        intent: 从课间或课后的实际活动进入，再随讲述了解一次具体经过；不要求发生特别的事，不默认考试、获奖或特定活动。
+        seed: 那时候课间，您通常会做些什么？
+        probe: 做您说的这件事时，周围是什么样的？
+      - id: school_transition
+        intent: 探索已确认的入学、转学或离校片段，不把离校等同于毕业或升学。
+        fact_gate: known_only
+        requires: 用户已明确提到某次入学、转学、离校或学习生活改变；不得默认参加过考试、完成学业、升学或毕业。
+        seed: 您说的那次学习生活变化，当时是怎么发生的？
+        probe: 变化之后，日常生活有什么不同吗？
+
+  # 07 · 校园之外学会的一件事
+  - id: learning_outside_school
+    label: 校园之外学会的一件事
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: skill
+        intent: 从生活、劳动或兴趣中的一件本领进入，不依赖学历、识字或证书。
+        seed: 有没有一件事，是您后来一点点学会做的？
+        probe: 您当初是怎么开始学这件事的？
+      - id: learning_path
+        intent: 了解观察、请教、实践或自学的实际过程，不默认老师或师傅。
+        seed: 刚开始的时候，您是怎么学的？
+        probe: 刚学的时候，您先从哪一步做起？
+      - id: practice
+        intent: 还原一次尝试和调整，不预设失败、困难或最终成功。
+        seed: 能拿一次练习来说说，当时您是怎么做的？
+        probe: 做完那一步，您接着做了什么？
+      - id: application
+        intent: 在实际使用经历存在时还原应用场景，不强求第一次或成功结局。
+        fact_gate: known_only
+        requires: 已确认用户在练习之外实际用过这项本领；不记得第一次时，可选任何一次记得清楚的使用经历。
+        seed: 您说的那次用上这项本领，当时是什么情形？
+        probe: 那次您是怎么用上它的？
+
+  # 08 · 年少时经常来往的人
+  - id: adolescent_companions
+    label: 年少时经常来往的人
+    stages: [adolescence, youth]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: meeting
+        intent: 由用户选择当时实际来往的人，不默认同学、挚友或学校经历。
+        seed: 年少时，有没有经常和您来往的人？
+        probe: 您和对方是怎么认识的？
+      - id: shared_activity
+        intent: 从一次具体共同活动呈现关系，不以亲密程度作为采访前提。
+        seed: 您记得当时和对方一起做过什么事吗？
+        probe: 那次您自己做了些什么？
+      - id: interaction
+        intent: 沿用户已讲出的互助、分歧或共同应对经历了解互动，不主动制造冲突。
+        fact_gate: known_only
+        requires: 用户已经提到与此人的一次互助、意见不同或共同处理事情的经历；仅有人物名字不足以使用此维度。
+        seed: 您刚才说的那件事，当时你们是怎么处理的？
+        probe: 对方当时有什么反应？
+      - id: later_contact
+        intent: 了解已确认的后续来往变化，不主动追问中断原因、对方生死或失联细节。
+        fact_gate: known_only
+        requires: 用户已主动提到与此人后来的联系或来往方式变化；不能从多年未提起推定失联或关系破裂。
+        seed: 您说后来来往有了变化，您愿意讲讲那段日子吗？
+        probe: 那段来往里，有没有一件您还记得的小事？
+
+  # 09 · 年少时接手的一件事
+  - id: early_responsibility
+    label: 年少时接手的一件事
+    stages: [childhood, adolescence, youth]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: undertaking
+        intent: 从一次被托付或主动接手的小事进入，不预设承担家计、照顾弟妹或早熟。
+        seed: 年少时，有没有什么事需要您自己来做？
+        probe: 您当时是怎么接下这件事的？
+      - id: task
+        intent: 还原实际任务和操作，不先评价责任大小。
+        seed: 当时这件事具体需要您做些什么？
+        probe: 您记得自己先做了哪一步吗？
+      - id: adjustment
+        intent: 只在有明确意外或困难时了解应对，不要求每件事都有波折。
+        fact_gate: known_only
+        requires: 用户已经提到这件事中出现了意外、不顺利或需要调整的情况。
+        seed: 您提到的那个情况出现后，您当时怎么处理的？
+        probe: 接下来事情是怎么往下进行的？
+      - id: afterward
+        intent: 在用户已讲出的进展之后了解后续和当时的想法，不预设事情已经完成、获得表扬或带来成长。
+        seed: 那之后，您又做了什么？
+        probe: 那时候您自己是怎么想的？
+
+  # 10 · 开始自己安排生活的一个片段
+  - id: independent_living
+    label: 开始自己安排生活的一个片段
+    stages: [youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: self_arrangement
+        intent: 从一次自己处理日常事务的经历进入，不把自主等同于独居、离家或经济独立。
+        seed: 您以前有没有一件日常小事，后来开始自己张罗了？
+        probe: 您当时先做了什么？
+      - id: preparation
+        intent: 了解当时怎样着手和准备，允许边做边摸索。
+        seed: 接手这件事后，您是怎么着手做的？
+        probe: 做这一步之前，您有没有先准备些什么？
+      - id: problem_solving
+        intent: 沿已出现的具体问题了解处理办法，不默认独自解决或顺利完成。
+        fact_gate: known_only
+        requires: 用户已经提到自己安排生活过程中遇到的具体问题；没有问题线索时不主动寻找困难。
+        seed: 您刚才提到那个问题，当时是怎么应对的？
+        probe: 后来这个办法用起来怎么样？
+      - id: lasting_habit
+        intent: 了解是否留下后续做法，不预设习惯一直保持至今。
+        seed: 那时用过的办法，后来还有用到的时候吗？
+        probe: 您记得后来在哪件事上用到了吗？
+
+  # 11 · 离开熟悉地方的一次经历
+  - id: leaving_familiar_place
+    label: 离开熟悉地方的一次经历
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: known_only
+    sensitivity: low
+    requires: 已确认一次离开熟悉环境的经历，可为迁居、求学、务工、旅行等；不能依据出生地与现居地不同推定具体出发情节或原因。
+    dimensions:
+      - id: departure
+        intent: 记录出发时的实际准备，离开的原因仅在用户愿意且已提及时顺接。
+        seed: 那次离开前，您有做些什么准备吗？
+        probe: 当时您带上了什么东西吗？
+      - id: arrival
+        intent: 先从实际行程或抵达后的环境进入，再顺用户提到的一处场景展开；不默认远行、交通方式或进城。
+        seed: 那次出发以后，您是怎么走的？
+        probe: 路上有没有在什么地方停下来过？
+      - id: first_task
+        intent: 了解抵达后先处理的一件实际事情，不默认安家或长期停留。
+        seed: 到了以后，您记得先做了什么吗？
+        probe: 那件事当时是怎么安排的？
+      - id: adjustment
+        intent: 在用户提到陌生或不同时了解适应过程，允许没有适应或只短暂停留。
+        fact_gate: known_only
+        requires: 用户已经提到新环境与原来不同、需要适应或调整；不能仅因出行就推定适应困难。
+        seed: 您说的这处不同，当时有没有让您改一改平常的做法？
+        probe: 您刚才说的这个做法，当时具体是怎么做的？
+
+  # 12 · 最早的劳动与谋生经历
+  - id: first_livelihood
+    label: 最早的劳动与谋生经历
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: known_only
+    sensitivity: low
+    requires: 已确认用户有一段较早的劳动或谋生经历；不要求正式单位、劳动合同、工资或经济独立，不由年龄推定参加过工作。
+    dimensions:
+      - id: beginning
+        intent: 从较早的一段劳动或谋生经历进入，不强求人生第一次。
+        seed: 您说的这段劳动经历，最初是怎么开始的？
+        probe: 您还记得刚开始时面对的是什么活吗？
+      - id: work_detail
+        intent: 还原实际任务、工具和做法，兼容务农、家业、自营、零工或受雇。
+        seed: 那时候您具体负责做什么？
+        probe: 做您说的这件活，当时一般从哪一步开始？
+      - id: return
+        intent: 只在已知有报酬、收获或其他回报时了解其情景，不追问金额、不默认工资。
+        fact_gate: known_only
+        requires: 用户已明确提到这段劳动实际获得了某种报酬、收成、物品或其他回报；按用户原称谓改写，不能把劳动等同于领工资。
+        seed: 您说拿到那份回报的时候，当时是什么情形？
+        probe: 您还记得后来怎么安排它的吗？
+      - id: episode
+        intent: 从具体劳动片段或实际接触的人寻找故事，不预设贫困、强迫劳动或贵人。
+        seed: 做这份活的时候，有没有哪件小事您现在还记得？
+        probe: 那件事具体是怎么发生的？
+
+  # 13 · 刚开始做一份工作时
+  - id: learning_work
+    label: 刚开始做一份工作时
+    stages: [adolescence, youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: low
+    requires: 已确认用户做过一份具体工作或劳动，并能明确当前所指；不能默认该工作发生在某年龄、某种单位，或有师傅、同事。
+    dimensions:
+      - id: first_scene
+        intent: 先了解刚接触这份工作时实际干活的地方，再顺用户提到的环境或活动还原场景；不预设办公室、工厂或单位。
+        seed: 刚开始做这份工作时，您是在什么地方干活？
+        probe: 那个地方当时是什么样的？
+      - id: first_task
+        intent: 了解刚开始做这份工作时是否需要学习具体任务，顺用户提到的内容探索做法；不默认存在师傅或正式培训。
+        seed: 刚开始做这份工作时，有没有什么是需要现学的？
+        probe: 当时您是怎么学的？
+      - id: specific_attempt
+        intent: 顺着一次已讲出的求助、失误或解决问题经历了解过程，不强求挫折。
+        fact_gate: known_only
+        requires: 用户已经提到工作中的一次具体求助、失误或处理问题的经历；不能仅因初入工作就预设发生过。
+        seed: 您刚才说的那次经历，当时接下来是怎么处理的？
+        probe: 您刚才说的那一步，当时是怎么做的？
+      - id: later_method
+        intent: 了解后来做法是否改变，不预设熟练、成功或获得认可。
+        seed: 后来再做这件事时，您的做法有没有什么不同？
+        probe: 您记得哪一次用了这个不同的做法吗？
+
+  # 14 · 一次具体的互相帮助
+  - id: mutual_help
+    label: 一次具体的互相帮助
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: occasion
+        intent: 从生活或做事时实际发生的帮忙进入，再顺一件具体事情展开；可以是接受或提供帮助，不预设落难、贵人或报恩。
+        seed: 以前做事情时，您有没有请人搭过把手？
+        probe: 那次具体要做什么事？
+      - id: offer
+        intent: 了解帮助怎样被提出或被发现，不预设主动求助或一方处于弱势。
+        seed: 这次帮助，最初是怎么开始的？
+        probe: 您记得当时说过什么或做过什么吗？
+      - id: action
+        intent: 还原双方实际做了什么，不强求感恩或恩情叙事。
+        seed: 这件事上，您自己做了些什么？
+        probe: 对方当时做了什么？
+      - id: afterward
+        intent: 开放了解事情后的来往或后续，不要求报答、重逢或持续联系。
+        seed: 这件事后来怎么样了？
+        probe: 这件事以后，您和对方还有来往吗？
+
+  # 15 · 自己拿主意的一次选择
+  - id: personal_decision
+    label: 自己拿主意的一次选择
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: choice
+        intent: 从日常生活中由用户自己决定的小事进入，再聚焦一次具体决定；不要求重大抉择或明确的多个选项。
+        seed: 以前日常生活里，有没有什么事是由您自己拿主意的？
+        probe: 您说的这件事，当时要定下来的是什么？
+      - id: consideration
+        intent: 了解当时的真实考虑，不默认犹豫、家庭冲突或后悔。
+        seed: 当时，您是怎么想这件事的？
+        probe: 当时您有没有把这个想法和谁说过？
+      - id: action
+        intent: 从决定落实到具体行动，允许决定未被执行或后来改变。
+        seed: 后来，您照着这个主意去做了吗？
+        probe: 您说的这一步，当时是怎么做的？
+      - id: outcome
+        intent: 记录后续实际发生的事，不将结果预设为正确、成功或遗憾。
+        seed: 这件事后来是怎么发展的？
+        probe: 其中有没有哪一幕让您现在还记得？
+
+  # 16 · 一段相识与相伴的经历
+  - id: companionship
+    label: 一段相识与相伴的经历
+    stages: [adolescence, youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: medium
+    requires: 已确认用户提到过一段亲密关系及其实际称谓；不能从年龄、性别或有无子女推定。未知时不盘问感情史，可改用“对自己产生影响的人”。
+    dimensions:
+      - id: meeting
+        intent: 了解用户愿意谈的关系如何开始，使用实际称谓，不预设性别、婚姻或关系现状。
+        seed: 您和对方最初是怎么认识的？
+        probe: 刚接触的时候，有没有一个小细节您还记得？
+      - id: shared_memory
+        intent: 先从双方实际一起做过的事情进入，再顺用户提到的某一次还原相处；不预设浪漫、幸福或关系持续至今。
+        seed: 那时候，您和对方有一起做过什么事吗？
+        probe: 做您刚才说的这件事时，对方做了些什么？
+      - id: knowing_person
+        intent: 通过用户确实观察到的习惯或做法，了解当时认识对方的过程；不要求全面关系评价或关系发生改变。
+        seed: 相处时，您有没有注意到对方什么习惯？
+        probe: 您是从什么事情上注意到这个习惯的？
+      - id: daily_change
+        intent: 了解这段关系是否影响当时生活，不预设同居或改变人生。
+        seed: 那段来往有没有让您的日常安排发生一些变化？
+        probe: 您说的这种变化，在一天里是怎样体现的？
+
+  # 17 · 成婚与共同生活的开始
+  - id: marriage_beginning
+    label: 成婚与共同生活的开始
+    stages: [youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: medium
+    requires: 已确认用户历史上有婚姻经历；当前未婚不等于从未结婚，伴侣或子女信息也不能代替婚史确认。不得默认婚礼、婚姻幸福、仍在婚姻中或对方健在。
+    dimensions:
+      - id: decision
+        intent: 在已确认婚姻经历中了解开始时的实际安排，不预设自由选择、恋爱过程或家庭支持。
+        seed: 那次成婚前，有什么事情需要您自己张罗吗？
+        probe: 您说的那件事，当时是怎么安排的？
+      - id: wedding
+        intent: 根据已确认的婚礼、仪式或婚事筹办内容，从实际安排或参与事务进入一个片段；不默认实际举办、规模或热闹。
+        fact_gate: known_only
+        requires: 用户已明确提到举办过婚礼、仪式或参与过具体婚事筹办；结过婚本身不能证明办过婚礼。
+        seed: 您说的那次婚事，当时是怎么张罗的？
+        probe: 当时您自己做了些什么？
+      - id: shared_daily_life
+        intent: 先了解已确认的共同生活中实际料理的日常事务，再顺一件具体事情还原生活；不预设同住、自有住房或性别分工。
+        fact_gate: known_only
+        requires: 已确认这段婚姻中有共同居住或共同安排日常生活的经历；不能从婚姻关系直接推定当时同住。
+        seed: 您说那时候一起生活，平常会忙些什么？
+        probe: 您说的这件事，当时是怎么做的？
+      - id: joint_task
+        intent: 还原一件已确认的共同处理事务，不默认共同承担、困难或和睦。
+        fact_gate: known_only
+        requires: 用户已经提到双方共同处理过一件具体事情；不从婚姻关系推定共同解决过问题。
+        seed: 您说那件事是一起处理的，当时具体怎么做的？
+        probe: 其中您自己做了哪一部分？
+
+  # 18 · 照料孩子与陪伴成长
+  - id: raising_children
+    label: 照料孩子与陪伴成长
+    stages: [adolescence, youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: medium
+    requires: 已确认用户有实际照料孩子的经历及关系，可为子女、晚辈或其他照料关系；结婚不等于有子女，有子女也不自动证明具体照料经历。不得默认亲生关系、性别分工或孩子现状。
+    dimensions:
+      - id: care_task
+        intent: 了解实际承担过的照料事项，使用孩子与用户的真实关系称谓。
+        seed: 您照料这个孩子的时候，通常会做些什么？
+        probe: 您说的这件事，当时是怎么做的？
+      - id: shared_day
+        intent: 先了解实际一起做过的事情，再顺一次活动或一天中的片段呈现照料关系；不默认同住或长期抚养。
+        seed: 那时候，您和这个孩子有没有一起做过什么事？
+        probe: 就说其中一次，当时是怎么开始的？
+      - id: small_problem
+        intent: 沿已确认的小问题了解双方做法，不预设教育冲突或孩子不听话。
+        fact_gate: known_only
+        requires: 用户已经提到照料或相处中的一个具体小问题，且愿意继续；不自行补入疾病、学习成绩或家庭冲突。
+        seed: 您刚才说的那个小问题，当时是怎么处理的？
+        probe: 孩子那时有什么反应？
+      - id: remembered_detail
+        intent: 记录用户记得的动作、话语或变化，不默认健康成长、成才或持续联系。
+        seed: 那时候，这个孩子有没有什么常做的小动作？
+        probe: 看到这个动作时，您通常会做些什么？
+
+  # 19 · 把日子过起来的办法
+  - id: making_a_home
+    label: 把日子过起来的办法
+    stages: [youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: daily_need
+        intent: 先了解用户实际料理过的一项日常事务，再从具体做法进入生活片段；不预设成家、买房、贫困或独居。
+        seed: 以前日常生活里，有什么事情是您自己料理的吗？
+        probe: 您说的这件事，当时一般是怎么做的？
+      - id: arrangement
+        intent: 了解空间、物件或事务的实际安排，不索取具体住址、存款或收入。
+        seed: 那时候，您是怎么把这件事安排起来的？
+        probe: 做这件事时，您会用到些什么东西？
+      - id: practical_solution
+        intent: 还原用户已提到的一次生活问题和处理方法，不要求故事有困难。
+        fact_gate: known_only
+        requires: 用户已经提到当时遇到的一件具体生活问题；不能从生活安排推定经济困难或资源匮乏。
+        seed: 您说的那个生活上的问题，当时是怎么处理的？
+        probe: 用了这个办法之后，接下来发生了什么？
+      - id: continuing_practice
+        intent: 了解某种做法是否延续或变化，不预设一直有效或保留至今。
+        seed: 那时候的做法，有没有哪一种后来还用过？
+        probe: 后来又用到它，是遇上了什么事情？
+
+  # 20 · 工作与生计的一次变化
+  - id: work_transition
+    label: 工作与生计的一次变化
+    stages: [adolescence, youth, middle_age, old_age]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: medium
+    requires: 已确认用户有转岗、换工作、自营、劳动方式调整或其他具体生计变化；不由职业名称不同直接补出变动原因。涉及被迫离职、债务等时只沿用户愿意展开的部分。
+    dimensions:
+      - id: difference
+        intent: 明确工作任务、营生方式或地点的实际变化，不预设升职、创业、失业或收入变化。
+        seed: 您说的那次变化，前后做的事情有什么不同？
+        probe: 您说的这一项，变动后具体是怎么做的？
+      - id: preparation
+        intent: 了解实际准备与安排，允许变化突然发生或并非自主选择。
+        seed: 那次变化发生时，您做了些什么安排？
+        probe: 您说的这件事，当时是怎么安排的？
+      - id: new_task
+        intent: 从变化后的实际事务或任务切入，不要求胜任或有成果。
+        seed: 变化之后，您开始做些什么事？
+        probe: 那件事当时是怎么做的？
+      - id: daily_effect
+        intent: 了解对日常生活的影响，不主动转向收入、债务或被迫离职细节。
+        seed: 那段变化，有没有影响您平常一天的安排？
+        probe: 变化以后，您通常怎么安排这件事？
+
+  # 21 · 退休前后的日子
+  - id: retirement_transition
+    label: 退休前后的日子
+    stages: [middle_age, old_age]
+    scope: stage_bound
+    fact_gate: known_only
+    sensitivity: low
+    requires: 用户已明确将本人一段经历称为退休，或已有可靠的退休经历记录；不按年龄、停止工作或子女年龄推定退休，不默认养老金或清闲生活。
+    dimensions:
+      - id: work_closing
+        intent: 先从退休前手头的工作了解当时的日常，再沿用户提到的人或事情进入一个片段；不默认交接、正式单位、仪式或欢送。
+        seed: 退休前那阵子，您手头主要在忙些什么？
+        probe: 您刚说的这件事，当时是怎么做的？
+      - id: daily_schedule
+        intent: 从退休后日常的一小段了解实际安排，再顺着回答找具体生活片段，不要求先选出特别的一天，不默认清闲、子女陪伴或经济保障。
+        seed: 刚退休那阵子，您早上起来一般会做些什么？
+        probe: 您刚说的这件事，通常是在什么地方做？
+      - id: activity_change
+        intent: 在已确认活动改变后了解具体生活，不预设退休一定带来新爱好。
+        fact_gate: known_only
+        requires: 用户已经提到退休后开始、减少、停止或调整了某项活动；不能仅因退休就推定生活变化。
+        seed: 您说退休后做这件事的安排变了，能讲讲其中一次吗？
+        probe: 那一次与以前有什么不同吗？
+      - id: old_connections
+        intent: 了解已确认的旧工作来往，不预设同事关系、持续联系或告别后的失落。
+        fact_gate: known_only
+        requires: 用户已经提到退休后与原工作中的人、事务或场所有实际联系；不默认一定有同事或仍保持联系。
+        seed: 您提到退休后还有来往，能讲讲其中一回吗？
+        probe: 那一次具体发生了什么？
+
+  # 22 · 生活节奏改变后的一个片段
+  - id: life_rhythm_change
+    label: 生活节奏改变后的一个片段
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: before_after
+        intent: 从一天的安排变化进入，不以退休、婚姻或健康背景为前提。
+        seed: 有没有一段日子，您每天的安排和以前不太一样了？
+        probe: 变化以后，您每天一般先忙些什么？
+      - id: activity
+        intent: 了解新出现、减少或停止的一件事情，不替用户解释变化原因。
+        seed: 那时有没有一件事，是新开始做的，或者后来不再做了？
+        probe: 能说说当时做这件事的一回吗？
+      - id: adjustment
+        intent: 沿用户已提到的适应或调整了解做法，不默认存在不适应。
+        fact_gate: known_only
+        requires: 用户已经提到新节奏中需要适应或调整；不能自行归因于疾病、失业或家庭事件。
+        seed: 您说刚开始需要调整，当时是怎么安排的？
+        probe: 后来这种安排用起来怎么样？
+      - id: episode
+        intent: 从新的日常安排中选择一个具体片段，不强问变化原因。
+        seed: 那样安排生活的时候，有没有一天或一件小事您现在还记得？
+        probe: 那一回具体发生了什么？
+
+  # 23 · 为自己保留的一份兴趣
+  - id: personal_interests
+    label: 为自己保留的一份兴趣
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: starting_point
+        intent: 从普通消遣或愿意做的事情进入，不要求系统爱好、闲钱或特长。
+        seed: 平时有没有一件您愿意做的事，哪怕只是个小消遣？
+        probe: 您最初是怎么接触到它的？
+      - id: engagement
+        intent: 已知道用户愿意做什么以后，先了解实际做法，再顺着其中一回展开，不要求挑选特别难忘的经历，不预设成就、作品或社会评价。
+        seed: 平常做这件事时，您一般先做什么？
+        probe: 能接着讲讲您做这件事的一回吗？
+      - id: anchor
+        intent: 从实际相关的物件、场所或参与者补充细节，不预设需要购买器材或加入团体。
+        seed: 您平常在哪儿做这件事？
+        probe: 那个地方是什么样的？
+      - id: continuity
+        intent: 先了解兴趣是否延续，再沿用户提到的继续、减少或停下补充具体经过；只有用户说到变化时才追问变化，不预设一直坚持或必须赋予人生意义。
+        seed: 后来您还常做这件事吗？
+        probe: 您刚才说到这处变化，当时是怎么回事？
+
+  # 24 · 一次重逢或重新联系
+  - id: reconnection
+    label: 一次重逢或重新联系
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: renewed_contact
+        intent: 开放寻找一次重逢或重新联系，不默认失联、关系破裂或存在遗憾。
+        seed: 有没有和一个人隔了一阵子，又见面或联系上的时候？
+        probe: 那次是怎么重新联系上的？
+      - id: encounter
+        intent: 在用户已提到一回见面或联系后，从当时所在的地方和实际交流进入场景，不默认线下重逢或久别后的激动。
+        seed: 那回联系时，您是在什么地方？
+        probe: 您记得当时聊了些什么吗？
+      - id: noticed_change
+        intent: 开放了解有没有发现变化，不预设外貌、健康、事业或关系改变。
+        seed: 那次联系时，有没有什么和您原来记得的不一样？
+        probe: 您是从哪个小细节发现的？
+      - id: after_contact
+        intent: 了解那次联系后是否还有来往；有后续时再沿一次实际联系展开，没有也不追查原因、不要求重新联系。
+        seed: 那次以后，您和对方还有来往吗？
+        probe: 能讲讲后来的一次联系吗？
+
+  # 25 · 把一件事教给别人的经历
+  - id: sharing_experience
+    label: 把一件事教给别人的经历
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: teaching_occasion
+        intent: 从一次教别人做小事的经历进入，不要求父母、师傅、教师或领导身份。
+        seed: 有没有一次，您把自己会做的一件事教给了别人？
+        probe: 那时对方想学的是什么？
+      - id: explanation
+        intent: 还原实际演示或解释过程，不预设正式教学方法或权威地位。
+        seed: 当时您是怎么给对方讲或做示范的？
+        probe: 您记得先从哪一步开始的吗？
+      - id: response
+        intent: 沿用户已讲到的讲解或示范，记录对方真实的反应；不默认有动手示范，也不默认赞许、理解或学会。
+        seed: 您教的时候，对方有什么反应吗？
+        probe: 您当时接着怎么讲或怎么做的？
+      - id: learner_attempt
+        intent: 在对方实际尝试的前提下记录过程，不将接受说明等同于已动手或已掌握。
+        fact_gate: known_only
+        requires: 用户已经提到对方实际尝试过所教的事情；不默认对方尝试、学会或成功。
+        seed: 您说对方后来自己试了一次，当时是什么情形？
+        probe: 那一次有没有哪个细节让您记得？
+
+  # 26 · 对自己产生影响的人
+  - id: important_people
+    label: 对自己产生影响的人
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: person
+        intent: 已有明确人物时直接顺接；没有时先从平常来往的人建立线索，再进入相处的小事，不要求先选出影响最大的人。也允许用户主动谈仅通过作品等认识的人，不虚构交往。
+        seed: 以前您平常和谁来往比较多？
+        probe: 您还记得和对方相处的一件小事吗？
+      - id: shared_event
+        intent: 用具体共同经历呈现关系；若只通过作品等产生影响，不虚构实际见面或交谈。
+        fact_gate: known_only
+        requires: 已确认用户与此人有真实交往或共同经历；仅表示受某人影响，不足以推定见过面或说过话。
+        seed: 您愿意讲讲和对方一起经历过的哪件事？
+        probe: 那一次具体发生了什么？
+      - id: memorable_detail
+        intent: 记录真实记得的话语、动作或做法，允许转述大意，不强求正面评价。
+        seed: 关于这个人，有没有一句话或一种做法让您一直记得？
+        probe: 您是在什么情形下知道这件事的？
+      - id: later_recollection
+        intent: 了解后来是否在具体事情中想起此人，不预设怀念、感恩或照着对方做。
+        seed: 后来有没有遇到什么事，让您又想起对方？
+        probe: 当时您正在做什么？
+
+  # 27 · 生活里看得见的时代变化
+  - id: everyday_era_changes
+    label: 生活里看得见的时代变化
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: new_thing
+        intent: 从买东西、出门、联系他人等日常活动中寻找用户亲历的新物件或新做法；结合已有背景选一个生活切口，不要求概括时代，也不靠出生地或年代推定经历。
+        seed: 以前和不在身边的人联系，您一般用什么办法？
+        probe: 后来联系的方式有过什么变化吗？
+      - id: own_response
+        intent: 先了解用户有没有实际使用；试过时顺接一回使用经历，没试过则只谈用户已提到的所见所闻，不默认有使用条件，也不要求评价新事物。
+        seed: 您当时有没有自己试过？
+        probe: 您那回是怎么用的？
+      - id: others_response
+        intent: 仅探索用户实际见到或听到的他人反应，不要求概括一代人或群体态度。
+        fact_gate: known_only
+        requires: 用户已经讲到自己实际见到或听到的他人反应；不能用时代背景代替亲历证据。
+        seed: 您提到周围人也有反应，您具体记得哪一件事？
+        probe: 您当时看到或听到了什么？
+      - id: daily_effect
+        intent: 开放了解一件日常小事是否改变，不默认进步、落后或统一的历史评价。
+        seed: 您刚才说的这种变化，对日常生活有什么影响吗？
+        probe: 您刚说的那件日常小事，后来一般是怎么做的？
+
+  # 28 · 一件自己在意的小成就
+  - id: meaningful_achievement
+    label: 一件自己在意的小成就
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: none
+    sensitivity: low
+    dimensions:
+      - id: meaningful_task
+        intent: 从用户自己认可的一件具体事情进入，已有事情线索时直接顺接；不要求评选人生中的成就，不以学历、收入、婚育、职位或奖项定义价值。
+        seed: 有没有一件事，您做完以后觉得自己做得还不错？
+        probe: 那件事当时具体是怎么做的？
+      - id: attempt
+        intent: 还原为此做过的一次实际尝试，不预设努力必然成功或克服过困难。
+        seed: 您当时做这件事，是从哪儿开始的？
+        probe: 接下来您做了什么？
+      - id: moment
+        intent: 用户已经讲到做到某一步时，再还原那一回的场景；不要求先挑选难忘时刻，也不要求最终完成、获奖或获得他人肯定。
+        seed: 您说做到这一步了，当时是什么情形？
+        probe: 您当时是在什么地方？
+      - id: personal_value
+        intent: 具体事情已经说清后，才顺着用户自己的表达了解为什么在意；不代替用户赞美，不要求总结大道理，也不为了说明价值另找一个故事。
+        seed: 对当时的您来说，这件事有什么特别的地方？
+        probe: 那时您为什么想把这件事做好？
+
+  # 29 · 一段不容易的日子与当时的应对
+  - id: difficult_times
+    label: 一段不容易的日子与当时的应对
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: known_only
+    sensitivity: high
+    requires: 相关困难经历来自用户明确讲述或有用户确认依据的记录，不能从生活线索推断；是否进入本次访谈还须另行满足 high 敏感度的当前意愿限制。
+    dimensions:
+      - id: starting_point
+        intent: 由用户决定愿意讲的起点和范围，不主动追溯疾病、债务、创伤或痛苦现场。
+        seed: 这段经历，您愿意从哪一小段说起？
+        probe: 您刚才讲到这里，接下来想讲哪一部分？
+      - id: daily_task
+        intent: 仅了解用户愿意讲的日常事务，不要求交代全部困境或原因。
+        seed: 那段日子里，有没有一件当时常做的事，您愿意讲讲？
+        probe: 您记得那件事当时是怎么做的吗？
+      - id: response
+        intent: 探索用户已主动提到的应对或支持，不预设获得帮助、坚强、恢复或圆满结局。
+        fact_gate: known_only
+        requires: 用户已经主动提到某种实际应对办法或支持，并愿意继续这一部分；不能为了积极结尾引导用户寻找成长或感恩。
+        seed: 您说当时有过这样的应对，愿意讲讲其中一次吗？
+        probe: 那一次您记得自己做了什么？
+      - id: recording_boundary
+        intent: 在确有整理需求时确认愿意保留的片段和不愿写入的边界，不把讲述同意等同于公开。
+        seed: 刚才讲到的这些，哪些是您希望整理进故事里的？
+        probe: 有没有哪一部分，您希望暂时不要写进去？
+
+  # 30 · 告别与重要关系的变化
+  - id: farewell_and_loss
+    label: 告别与重要关系的变化
+    stages: [childhood, adolescence, youth, middle_age, old_age]
+    scope: cross_stage
+    fact_gate: known_only
+    sensitivity: high
+    requires: 已确认用户讲到一段告别或重要关系变化；不能由年龄、称谓、长期未联系推定死亡、离异或决裂。即使画像有记录，也须另行满足 high 敏感度的当前意愿限制。
+    dimensions:
+      - id: starting_person
+        intent: 让用户选择人、事与讲述范围，不推定死亡、离异、决裂或告别原因。
+        seed: 这段告别或关系变化，您愿意从哪个片段说起？
+        probe: 您刚才提到的这一部分，还有什么是您想讲的？
+      - id: shared_memory
+        intent: 只在有实际共同经历时记录用户愿意保留的片段，不要求复述痛苦现场。
+        fact_gate: known_only
+        requires: 已确认用户与所谈之人有实际共同经历，并愿意谈其中的回忆；不从称谓或重要性直接推定。
+        seed: 和对方共同经历的事情里，您愿意留下哪一段？
+        probe: 这段经历里，还有什么是您愿意留下的？
+      - id: daily_change
+        intent: 仅顺接用户已主动提到的日常变化，不要求解释失去、释怀或继续深挖。
+        fact_gate: known_only
+        requires: 用户已主动提到关系变化后的一项具体日常变化，并表示愿意展开；不因知道告别就主动寻找痛苦影响。
+        seed: 您说那以后日常有了变化，您愿意讲哪一部分？
+        probe: 您刚才说的这件日常小事，后来是怎么安排的？
+      - id: keepsake
+        intent: 了解用户愿意保留的物件、习惯或话语，不默认遗物、永久失去或情绪结论。
+        seed: 有没有一样东西、一个习惯或一句话，是您希望留在这段故事里的？
+        probe: 您愿意讲讲它相关的那段记忆吗？

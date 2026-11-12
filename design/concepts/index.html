@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>慢记 · UI 重设计概念板</title>
+<link rel="stylesheet" href="./board.css">
+</head>
+<body>
+<main class="board">
+
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="masthead-seal">慢</div>
+      <div>
+        <h1>慢记 · 界面重设计</h1>
+        <p class="masthead-sub">THREE VISUAL DIRECTIONS / 2026.11</p>
+      </div>
+    </div>
+    <p class="masthead-right">同一个产品，三种讲述方式：<b>一本正在写下的书</b>、<b>一盏为讲述亮着的灯</b>、<b>一本会收照片的家书</b>。每套都附首页与代表页面。</p>
+  </header>
+
+  <!-- ═══════════════ 方向 A ═══════════════ -->
+  <section class="direction" id="dir-a">
+    <aside class="meta">
+      <p class="eyebrow">方向 A</p>
+      <h2>纸墨<br>一册手稿</h2>
+      <p class="lede">把产品做成一本正在被写下的书：纸色、宋体、细线、骑缝印章。界面像编辑过的书页，而不是一叠卡片；所有层级靠字号、留白和线来建立。</p>
+      <span class="verdict">推荐 · 阅读与适老最稳</span>
+
+      <div class="meta-block">
+        <p class="meta-label">Palette</p>
+        <div class="swatches">
+          <div class="swatch" style="background:#f5eddf"></div>
+          <div class="swatch" style="background:#2b241d"></div>
+          <div class="swatch" style="background:#a9472b"></div>
+          <div class="swatch" style="background:#97713f"></div>
+          <div class="swatch" style="background:#4f6a58"></div>
+        </div>
+        <p class="swatch-legend">宣纸 #F5EDDF · 墨 #2B241D · 朱砂 #A9472B<br>赭石 #97713F · 松烟绿 #4F6A58</p>
+      </div>
+
+      <div class="meta-block">
+        <p class="meta-label">Typography</p>
+        <div class="type-sample">
+          <p class="big" style="font-size:24px">今天，想说起哪一段？</p>
+          <p class="small">宋体 600 / 标题 31 · 正文 17 / 行高 1.95</p>
+          <p class="small" style="font-family:var(--serif);font-size:12.5px;color:#4d443a">正文亦用宋体，UI 标签用苹方，数字用 Georgia Italic。</p>
+        </div>
+      </div>
+
+      <div class="meta-block">
+        <p class="meta-label">Signature</p>
+        <div class="motifs"><span class="motif">朱砂小印</span><span class="motif">双细线</span><span class="motif">中文页码</span><span class="motif">首字下沉</span></div>
+      </div>
+
+      <p class="risk"><b>注意</b>宋体在小字号下会发虚，正文不低于 17px；朱砂只用于主操作与印章，别做成满屏红。</p>
+    </aside>
+
+    <div class="devices">
+      <figure class="device-wrap">
+        <div class="device">
+          <div class="phone a-phone grain">
+            <div class="status"><span>9:41</span><span class="status-right"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="battery"></span></span></div>
+
+            <div class="a-top">
+              <div class="a-brand"><span class="a-seal">慢</span>慢记</div>
+              <button class="a-me">我的 <span style="font-size:10px">›</span></button>
+            </div>
+
+            <div class="a-head">
+              <p class="a-kicker">人生轨迹 · 第一章</p>
+              <h2>今天，想说起<br>哪一段？</h2>
+              <p class="a-sub">选一个话题，小暖陪您慢慢聊。</p>
+            </div>
+            <div class="a-double-rule"></div>
+
+            <div class="a-progress">
+              <div class="a-progress-top">
+                <h3>早年生活与长大的地方</h3>
+                <em>5 / 12</em>
+              </div>
+              <div class="a-bar"><i style="width:42%"></i></div>
+              <div class="a-stages"><span>共 12 个话题</span><span>已讲 5 个 · 剩 7 个</span></div>
+            </div>
+
+            <div class="a-list">
+              <div class="a-list-head"><span>这一章还没讲完</span><em>按时间排的</em></div>
+              <div class="a-topic">
+                <span class="a-no">〇一</span>
+                <div><h4>住过的地方</h4><p>小时候，您住的地方附近都有些什么呀？</p></div>
+                <span class="a-state">已成篇</span>
+              </div>
+              <div class="a-topic">
+                <span class="a-no">〇二</span>
+                <div><h4>常走的一条路</h4><p>小时候常走的那条路，现在还常想起吗？</p></div>
+                <span class="a-topic-arrow">→</span>
+              </div>
+              <div class="a-topic">
+                <span class="a-no">〇三</span>
+                <div><h4>普通的一顿饭</h4><p>小时候，家里一般吃些什么呀？</p></div>
+                <span class="a-topic-arrow">→</span>
+              </div>
+              <div class="a-quote"><p><b>已 写 下 的 一 句</b>“如今再想那条巷子，最清楚的还是回家时这几步路。”</p></div>
+            </div>
+
+            <nav class="a-nav">
+              <span class="a-nav-item on"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 3.8 3.5 6.2v14L9 17.8l6 2.4 5.5-2.4v-14L15 6.2 9 3.8Z"/><path d="M9 3.8v14M15 6.2v14"/></svg>轨迹</span>
+              <span class="a-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M5 4.5h8.5A3.5 3.5 0 0 1 17 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5Z"/><path d="M9 8h5M9 11.5h5"/></svg>传记</span>
+              <span class="a-nav-mic"><span class="disc"><svg class="nav-ico" style="width:26px;height:26px;stroke-width:1.7" viewBox="0 0 24 24"><path d="M4 10.5v3M8 7v10M12 4v16M16 7.5v9M20 10.5v3"/></svg></span><span>小暖</span></span>
+              <span class="a-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="10" r="2.3"/><path d="M16 16.5a4.5 4.5 0 0 1 4.5 4"/></svg>家人</span>
+              <span class="a-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="device-cap"><b>人生轨迹</b><span>HOME / A</span></figcaption>
+      </figure>
+
+      <figure class="device-wrap">
+        <div class="device">
+          <div class="phone a-phone a-read grain">
+            <div class="status"><span>9:41</span><span class="status-right"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="battery"></span></span></div>
+
+            <div class="a-read-head">
+              <span class="back"><span style="font-size:15px;line-height:1">‹</span> 传记</span>
+              <span class="toc">目录</span>
+            </div>
+            <div class="a-read-progress"><i></i></div>
+
+            <div class="a-book">
+              <div class="a-book-ribbon"></div>
+              <p class="chapter-no">第 一 章</p>
+              <h1>老巷里的童年</h1>
+              <p class="byline">来自 11 月 2 日的讲述 · 已修订两次</p>
+              <div class="a-ornament"><span>慢 记</span></div>
+              <p class="a-body has-drop"><span class="dropcap">说</span>起小时候，我先想起家门前的那条窄巷。两旁的房子挨得近，巷口有一棵树，再往外是几家小铺。天热时，邻居搬着凳子出来坐，择菜、收衣服，缺什么便隔着门招呼一声。</p>
+              <p class="a-body">放学回来，我把书包放下就去找伙伴，常在巷子里跑得忘了时间。听见奶奶喊吃饭，才匆匆往家赶。如今再想那条巷子，最清楚的还是回家时这几步路。</p>
+              <p class="a-body">后来巷子拆了，母亲在电话里提过一次。我想起那棵树，却怎么也想不起树下的石阶有几级。</p>
+            </div>
+            <div class="a-book-foot">
+              <span>壹 · 壹</span>
+              <span class="seal">修订<br>初稿</span>
+              <span>共 七 章</span>
+            </div>
+
+            <div class="a-read-toolbar">
+              <span>目录</span>
+              <span>字号 · 中</span>
+              <span class="accent">分享给家人</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="device-cap"><b>传记 · 阅读</b><span>READ / A</span></figcaption>
+      </figure>
+    </div>
+
+    <aside class="meta">
+      <div class="meta-block" style="margin-top:0">
+        <p class="meta-label">Why it works</p>
+        <p class="lede" style="font-size:12.5px">· 传记是最终交付物，界面从第一屏就长得像一本书，“讲下去”有明确的收获感。<br><br>· 宋体正文 17px / 行高 1.95，配合 4.5:1 以上对比度，长辈读得清。<br><br>· 话题列表改为“章内页目”，天然形成进度感，不需要额外的游戏化。</p>
+      </div>
+      <div class="meta-block">
+        <p class="meta-label">Trade-off</p>
+        <p class="lede" style="font-size:12.5px">气质偏沉静、偏文化类产品。年轻家人端可以更轻快，但主色与字体不变。</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ═══════════════ 方向 B ═══════════════ -->
+  <section class="direction" id="dir-b">
+    <aside class="meta">
+      <p class="eyebrow">方向 B</p>
+      <h2>灯火<br>夜里的慢谈</h2>
+      <p class="lede">以小暖的一盏灯作为界面中心。讲述时屏幕退到后面，只剩光、声音和正在浮现的字；其他页面仍用温暖的深色纸张。</p>
+      <span class="verdict is-neutral">差异化最强 · 建议作为夜听模式</span>
+
+      <div class="meta-block">
+        <p class="meta-label">Palette</p>
+        <div class="swatches">
+          <div class="swatch" style="background:#1e1915"></div>
+          <div class="swatch" style="background:#f3e6d0"></div>
+          <div class="swatch" style="background:#e2a45c"></div>
+          <div class="swatch" style="background:#c76b46"></div>
+          <div class="swatch" style="background:#6f7a68"></div>
+        </div>
+        <p class="swatch-legend">墨夜 #1E1915 · 米白 #F3E6D0 · 灯火 #E2A45C<br>余烬 #C76B46 · 青灰 #6F7A68</p>
+      </div>
+
+      <div class="meta-block">
+        <p class="meta-label">Typography</p>
+        <div class="type-sample">
+          <p class="big" style="font-size:23px">早些年的路，<br>您还记得吗？</p>
+          <p class="small">宋体 500 / 问句 21 · 字幕 16.5 / 行高 1.9</p>
+          <p class="small" style="color:#b9a894">深色下不用细衬线小字，关键句加大、加亮。</p>
+        </div>
+      </div>
+
+      <div class="meta-block">
+        <p class="meta-label">Signature</p>
+        <div class="motifs"><span class="motif">一盏呼吸的灯</span><span class="motif">字幕先于界面</span><span class="motif">深色只在讲述态</span></div>
+      </div>
+
+      <p class="risk"><b>注意</b>深色对白内障、老花更不友好，不能做默认主题；需要“白天/夜里”一键切换，并保证正文 ≥ 7:1 对比度。</p>
+    </aside>
+
+    <div class="devices">
+      <figure class="device-wrap">
+        <div class="device">
+          <div class="phone b-phone grain">
+            <div class="status"><span>9:41</span><span class="status-right"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="battery"></span></span></div>
+
+            <div class="b-top"><span class="brand">慢记</span><span>十一月九日 · 夜</span></div>
+
+            <div class="b-head">
+              <p class="b-date">晚 上 好</p>
+              <h2>今晚，<br>想聊哪一段？</h2>
+              <p>不用准备，想到哪儿说到哪儿。<br>小暖会把您的话收好。</p>
+            </div>
+
+            <div class="b-card">
+              <p class="lab">正 在 写 的 一 章</p>
+              <h3>早年生活与长大的地方</h3>
+              <div class="row"><span class="track"><i></i></span><span class="count">5 / 12 段</span></div>
+              <div class="go"><span>接着上次 —— 常走的一条路</span><span>→</span></div>
+            </div>
+
+            <div class="b-list">
+              <div class="b-list-head"><span>还 没 讲 的</span><span>按 年 代 排</span></div>
+              <div class="b-topic"><div><h4>普通的一顿饭</h4><p>小时候，家里一般吃些什么呀？</p></div><span class="dot on"></span></div>
+              <div class="b-topic"><div><h4>闲下来做什么</h4><p>小时候不忙的时候，您都爱干点什么？</p></div><span class="dot"></span></div>
+            </div>
+
+            <nav class="b-nav">
+              <span class="b-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 3.8 3.5 6.2v14L9 17.8l6 2.4 5.5-2.4v-14L15 6.2 9 3.8Z"/><path d="M9 3.8v14M15 6.2v14"/></svg>轨迹</span>
+              <span class="b-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M5 4.5h8.5A3.5 3.5 0 0 1 17 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5Z"/><path d="M9 8h5M9 11.5h5"/></svg>传记</span>
+              <span class="b-nav-mic"><span class="disc"><svg class="nav-ico" style="width:25px;height:25px;stroke-width:1.8" viewBox="0 0 24 24"><path d="M4 10.5v3M8 7v10M12 4v16M16 7.5v9M20 10.5v3"/></svg></span><span>小暖</span></span>
+              <span class="b-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="10" r="2.3"/><path d="M16 16.5a4.5 4.5 0 0 1 4.5 4"/></svg>家人</span>
+              <span class="b-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="device-cap"><b>夜里的首页</b><span>HOME / B</span></figcaption>
+      </figure>
+
+      <figure class="device-wrap">
+        <div class="device">
+          <div class="phone b-phone b-talk grain">
+            <div class="status"><span>9:41</span><span class="status-right"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="battery"></span></span></div>
+
+            <div class="b-talk-head"><span>‹ 返回</span><span class="finish">结束</span></div>
+            <p class="b-topic-lab">常 走 的 一 条 路</p>
+
+            <div class="b-orb-wrap">
+              <div class="b-rings"><span></span><span></span><span></span></div>
+              <div class="b-orb"></div>
+              <div class="b-wave"><i style="height:14px"></i><i style="height:26px"></i><i style="height:40px"></i><i style="height:22px"></i><i style="height:34px"></i><i style="height:18px"></i><i style="height:28px"></i></div>
+              <div class="b-listen">小 暖 在 听 · 00:42</div>
+            </div>
+
+            <div class="b-q">
+              <p class="who">小 暖</p>
+              <p>“小时候常走的那条路，<br>现在还记得是什么样吗？”</p>
+            </div>
+
+            <div class="b-live">
+              <p class="who">您 说</p>
+              <p>记得，是一条土路，两边都是梧桐树，夏天走一趟，鞋面上全是土……<span class="cursor"></span></p>
+            </div>
+
+            <div class="b-actions">
+              <button class="b-primary"><svg class="nav-ico" style="width:20px;height:20px;stroke-width:1.8" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>说完了，帮我整理</button>
+              <button class="b-secondary">先停一下，歇会儿再说</button>
+              <p class="b-private">录音只用于整理您的故事 · 可随时删除</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="device-cap"><b>讲述中</b><span>TALK / B</span></figcaption>
+      </figure>
+    </div>
+
+    <aside class="meta">
+      <div class="meta-block" style="margin-top:0">
+        <p class="meta-label">Why it works</p>
+        <p class="lede" style="font-size:12.5px">· 讲述是这个产品的核心动作，把“在听”做成一个可见的、会呼吸的灯，比一个麦克风图标更能让人敢开口。<br><br>· 讲述页几乎没有导航和列表，长辈不会被图标分散。<br><br>· 首页与讲述页气质统一，品牌记忆点强。</p>
+      </div>
+      <div class="meta-block">
+        <p class="meta-label">Trade-off</p>
+        <p class="lede" style="font-size:12.5px">深色阅读不适合所有人，也不能做唯一主题。可只在“开始讲述”后进入，并允许跟随系统。</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ═══════════════ 方向 C ═══════════════ -->
+  <section class="direction" id="dir-c">
+    <aside class="meta">
+      <p class="eyebrow">方向 C</p>
+      <h2>家书<br>会收照片的相册</h2>
+      <p class="lede">把传记做成家里的相册：照片、胶带、手写批注和家人的回话。每一个故事都有一张照片、一句话，点开就能读给孙辈听。</p>
+      <span class="verdict is-neutral">家庭共读最强 · 需克制装饰</span>
+
+      <div class="meta-block">
+        <p class="meta-label">Palette</p>
+        <div class="swatches">
+          <div class="swatch" style="background:#faf3e6"></div>
+          <div class="swatch" style="background:#33281f"></div>
+          <div class="swatch" style="background:#b25a3a"></div>
+          <div class="swatch" style="background:#687152"></div>
+          <div class="swatch" style="background:#e8d5a3"></div>
+        </div>
+        <p class="swatch-legend">米纸 #FAF3E6 · 深褐 #33281F · 砖红 #B25A3A<br>橄榄 #687152 · 胶带黄 #E8D5A3</p>
+      </div>
+
+      <div class="meta-block">
+        <p class="meta-label">Typography</p>
+        <div class="type-sample">
+          <p class="big" style="font-size:23px;font-family:'Kaiti SC','STKaiti',var(--serif)">妈做的萝卜汤，最香。</p>
+          <p class="small">宋体用于正文与标题，楷体只用于手写批注。</p>
+          <p class="small" style="color:#6e6153">正文 17 / 行高 1.88；批注 14 / 1.85。</p>
+        </div>
+      </div>
+
+      <div class="meta-block">
+        <p class="meta-label">Signature</p>
+        <div class="motifs"><span class="motif">照片胶带</span><span class="motif">手写批注</span><span class="motif">入册印章</span><span class="motif">家人回话</span></div>
+      </div>
+
+      <p class="risk"><b>注意</b>装饰一多就显乱；照片必须来自真实讲述，不能用网图或 AI 图；文字仍要保持在干净的纸面上。</p>
+    </aside>
+
+    <div class="devices">
+      <figure class="device-wrap">
+        <div class="device">
+          <div class="phone c-phone grain">
+            <div class="status"><span>9:41</span><span class="status-right"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="battery"></span></span></div>
+
+            <div class="c-top">
+              <div class="c-brand"><span class="mark">慢</span>慢记</div>
+              <span class="who">李家的故事</span>
+            </div>
+
+            <div class="c-hero">
+              <h2>把平常的日子，<br>慢慢收好。</h2>
+              <p>您讲，我们记。讲过的，会变成一本能翻的书。</p>
+            </div>
+
+            <figure class="c-photo">
+              <img src="./assets/hometown.webp" alt="老家门口的旧照片">
+              <figcaption><span>老家门口</span><span>1998 · 春</span></figcaption>
+            </figure>
+
+            <div class="c-stat">
+              <div><b>12</b><span>个故事已入册</span></div>
+              <div><b>3</b><span>个故事这个月新写</span></div>
+            </div>
+
+            <div class="c-sect"><h3>从这一页接着讲</h3><span>看全部 →</span></div>
+            <div class="c-cards">
+              <div class="c-card">
+                <span class="tag">已成篇</span>
+                <h4>普通的一顿饭</h4>
+                <p>小时候，家里一般吃些什么呀？</p>
+                <div class="meta"><span class="c-avatars"><i></i><i></i><i></i></span><span>小敏也读过</span></div>
+              </div>
+              <div class="c-card" style="background:#f6ecdc">
+                <span class="tag" style="color:#9a6a45;border-color:rgba(154,106,69,.35)">想听这段</span>
+                <h4>常走的一条路</h4>
+                <p>小时候常走的那条路，现在还常想起吗？</p>
+                <div class="meta"><span>小暖想听 · 3 分钟</span></div>
+              </div>
+            </div>
+
+            <div class="c-fam-note">
+              <span class="av">敏</span>
+              <p><b>小敏（女儿）</b>　30 分钟前打开了《老巷里的童年》<br>“妈，下次讲讲巷口那棵树吧。”</p>
+            </div>
+
+            <nav class="c-nav">
+              <span class="c-nav-item on"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 3.8 3.5 6.2v14L9 17.8l6 2.4 5.5-2.4v-14L15 6.2 9 3.8Z"/><path d="M9 3.8v14M15 6.2v14"/></svg>故事</span>
+              <span class="c-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M5 4.5h8.5A3.5 3.5 0 0 1 17 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5Z"/><path d="M9 8h5M9 11.5h5"/></svg>传记</span>
+              <span class="c-nav-mic"><span class="disc"><svg class="nav-ico" style="width:24px;height:24px;stroke-width:1.8" viewBox="0 0 24 24"><path d="M4 10.5v3M8 7v10M12 4v16M16 7.5v9M20 10.5v3"/></svg></span><span>小暖</span></span>
+              <span class="c-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="10" r="2.3"/><path d="M16 16.5a4.5 4.5 0 0 1 4.5 4"/></svg>家人</span>
+              <span class="c-nav-item"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>我的</span>
+            </nav>
+          </div>
+        </div>
+        <figcaption class="device-cap"><b>故事首页</b><span>HOME / C</span></figcaption>
+      </figure>
+
+      <figure class="device-wrap">
+        <div class="device">
+          <div class="phone c-phone c-story grain">
+            <div class="status"><span>9:41</span><span class="status-right"><svg width="17" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="2.6" height="4" rx=".6"/><rect x="4.4" y="5" width="2.6" height="6" rx=".6"/><rect x="8.8" y="2.6" width="2.6" height="8.4" rx=".6"/><rect x="13.2" y="0" width="2.6" height="11" rx=".6"/></svg><svg width="16" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M1 4.2a10.5 10.5 0 0 1 14 0M3.6 7a7 7 0 0 1 8.8 0M6.3 9.7a3.4 3.4 0 0 1 3.4 0"/></svg><span class="battery"></span></span></div>
+
+            <div class="c-story-head"><span>‹ 故事</span><span class="edit">编辑</span></div>
+
+            <figure class="c-story-photo">
+              <img src="./assets/family-table.webp" alt="一家人围坐吃饭的旧照片">
+            </figure>
+
+            <div class="c-story-body">
+              <p class="kicker">第 一 章 · 早 年 生 活</p>
+              <h1>普通的一顿饭</h1>
+              <div class="note">妈做的萝卜汤，最香。灶台边总有一小碟咸菜。</div>
+              <p>晚饭常是米饭、青菜和萝卜汤，偶尔添一盘鸡蛋。奶奶坐窗边，父亲坐门边，我挨着母亲，饭前把长短相近的筷子分好。</p>
+              <p>揭开锅盖，热气升起来，等大家坐齐，才响起筷子碰碗沿的声音。我也常有坐不住的时候，惦记出去玩，没吃几口就跑。</p>
+            </div>
+
+            <div class="stamp">已收进<br>传记</div>
+
+            <div class="c-note-fam">
+              <span class="av">敏</span>
+              <p><b>小敏（女儿）</b><span class="when">昨天</span><br>我也记得这张桌子，汤里还放一点白胡椒。</p>
+            </div>
+          </div>
+        </div>
+        <figcaption class="device-cap"><b>故事页 · 家人回话</b><span>STORY / C</span></figcaption>
+      </figure>
+    </div>
+
+    <aside class="meta">
+      <div class="meta-block" style="margin-top:0">
+        <p class="meta-label">Why it works</p>
+        <p class="lede" style="font-size:12.5px">· 一张真实老照片，比十行说明更能唤起讲述；照片和家人的回话也让“写传记”变成全家的事。<br><br>· 适合分享到家庭群，天然带来新用户。<br><br>· 情感浓度最高，容易做出传播素材。</p>
+      </div>
+      <div class="meta-block">
+        <p class="meta-label">Trade-off</p>
+        <p class="lede" style="font-size:12.5px">照片、批注、胶带都是“额外的内容”，需要产品有照片上传与家人评论能力；否则会变成空壳装饰。</p>
+      </div>
+    </aside>
+  </section>
+
+  <footer class="footer">
+    <div class="col"><b>共同的基础</b>三套方向都按适老化标准设计：正文 ≥ 17px、对比度 ≥ 4.5:1、可点区域 ≥ 44×44、支持字号调节、同一操作只用一种表述。</div>
+    <div class="col"><b>下一步</b>选定方向后，补齐 8 个关键页面、桌面版式、完整 token 与组件状态，并可直接落地为 Vue 主题。</div>
+    <div class="col"><b>参考</b>Warm &amp; Editorial（PageProofer）、微信长辈就医适老化规范、Storyworth 的“一问一答成书”流程、Remento 的家庭记忆采集。</div>
+  </footer>
+</main>
+</body>
+</html>

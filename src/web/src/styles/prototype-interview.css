@@ -1,0 +1,59 @@
+@import './prototype-theme.css';
+#app > main.prototype-interview { display:flex; flex-direction:column; width:min(100%,900px); min-height:100dvh; padding:0 48px calc(28px + env(safe-area-inset-bottom)); background:var(--prototype-paper); color:var(--prototype-ink); }
+.prototype-interview-header { display:flex; align-items:center; justify-content:space-between; flex:none; gap:20px; min-height:82px; padding-top:env(safe-area-inset-top); }
+.prototype-interview-back { display:inline-flex; align-items:center; gap:5px; min-height:44px; padding-right:8px; color:var(--prototype-muted); font-size:14px; }
+.prototype-interview-back svg { flex:none; width:18px; height:18px; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.prototype-interview-label { flex:none; color:var(--prototype-muted); font-size:12px; }
+.prototype-interview-topic { flex:none; width:min(100%,550px); min-width:0; margin:0 auto; padding:28px 0 0; text-align:left; }
+.prototype-interview-chapter { margin:0 0 14px; color:var(--prototype-muted); font-size:13px; line-height:1.8; overflow-wrap:anywhere; }
+.prototype-interview-topic h1,.prototype-interview-unavailable h1 { margin:0; color:var(--prototype-ink); font-size:36px; font-weight:650; line-height:1.5; overflow-wrap:anywhere; text-wrap:balance; }
+.prototype-interview-description { max-width:34em; margin:24px 0 0; padding-left:16px; border-left:3px solid var(--prototype-gold); color:var(--prototype-ink); font-size:17px; line-height:1.9; text-align:left; white-space:pre-wrap; overflow-wrap:anywhere; }
+.prototype-interview-voice { display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:26px; min-height:300px; padding:36px 0; }
+.prototype-interview .voice-ring { position:relative; flex:none; width:154px; height:154px; margin:0 auto; }
+.prototype-interview .voice-ring .ring { position:absolute; border:1px solid var(--prototype-gold); border-radius:50%; animation:none; transition:none; transform:none; }
+.prototype-interview .voice-ring .r1 { inset:0; opacity:.4; }
+.prototype-interview .voice-ring .r2 { inset:14px 12px 18px; opacity:.3; }
+.prototype-interview .voice-ring .r3 { inset:29px 26px 33px; opacity:.23; }
+.prototype-interview .voice-ring .ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--prototype-ink); }
+.prototype-interview .voice-ring .ring-center svg { width:30px; height:30px; }
+.prototype-interview-caption { width:min(100%,480px); text-align:center; }
+.prototype-interview-caption:empty { display:none; }
+.prototype-interview-caption > span { display:block; margin-bottom:9px; color:var(--prototype-muted); font-size:13px; }
+.prototype-interview-caption p { font-size:20px; line-height:1.85; overflow-wrap:anywhere; }
+.prototype-interview-caption small { display:block; margin-top:12px; color:var(--prototype-muted); font-size:12px; }
+.prototype-interview-actions { display:flex; flex:none; flex-direction:column; align-items:center; gap:8px; width:min(100%,320px); margin:0 auto; }
+.prototype-interview-action { display:flex; align-items:center; justify-content:center; width:100%; min-height:54px; padding:12px 20px; border:0; border-radius:8px; background:var(--prototype-action); color:var(--prototype-ink); font-size:17px; line-height:1.5; text-align:center; }
+.prototype-interview-action:hover { background:var(--prototype-action-hover); }
+.prototype-interview-secondary { width:100%; min-height:44px; padding:9px 12px; background:transparent; color:var(--prototype-muted); font-size:14px; }
+.prototype-interview-secondary:disabled { opacity:.45; }
+.prototype-interview-error { width:100%; color:#93684d; font-size:14px; line-height:1.7; }
+.prototype-interview-unavailable { display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:36px 0 100px; text-align:center; }
+.prototype-interview-unavailable h1 { font-size:26px; }
+.prototype-interview-unavailable a { display:inline-flex; align-items:center; gap:6px; min-height:44px; color:var(--prototype-ink); font-size:15px; }
+.prototype-interview a:focus-visible,.prototype-interview button:focus-visible { outline:2px solid var(--prototype-gold); outline-offset:3px; border-radius:3px; }
+.prototype-interview-voice.is-topic-library { flex:none; min-height:0; align-items:stretch; width:min(100%,550px); margin:0 auto; }
+.is-topic-library .prototype-interview-caption { text-align:left; }
+.prototype-topic-note { width:100%; min-width:0; }
+.prototype-topic-note-hint { margin:0 0 20px; color:var(--prototype-muted); font-size:13px; line-height:1.8; }
+.prototype-topic-note label { display:block; margin-bottom:10px; font-size:15px; }
+.prototype-topic-note textarea { display:block; box-sizing:border-box; width:100%; padding:14px; border:1px solid var(--prototype-rule); border-radius:8px; background:transparent; color:var(--prototype-ink); font:inherit; font-size:17px; line-height:1.8; resize:vertical; }
+.prototype-topic-note textarea:focus-visible { outline:2px solid var(--prototype-gold); outline-offset:3px; }
+@media (max-width:759px) {
+  #app > main.prototype-interview { padding:0 22px calc(24px + env(safe-area-inset-bottom)); }
+  .prototype-interview-header { min-height:68px; }
+  .prototype-interview-topic { padding-top:22px; }
+  .prototype-interview-topic h1 { font-size:30px; }
+  .prototype-interview-description { margin-top:22px; }
+  .prototype-interview-voice { min-height:285px; padding:30px 0; }
+  .prototype-interview .voice-ring { width:144px; height:144px; }
+  .prototype-interview-caption p { font-size:18px; }
+}
+@media (max-width:350px) {
+  #app > main.prototype-interview { padding-right:18px; padding-left:18px; }
+  .prototype-interview-topic { padding-top:18px; }
+  .prototype-interview-topic h1 { font-size:27px; }
+  .prototype-interview-description { font-size:16px; }
+  .prototype-interview-voice { min-height:260px; padding:26px 0; }
+  .prototype-interview .voice-ring { width:128px; height:128px; }
+  .prototype-interview-unavailable h1 { font-size:24px; }
+}

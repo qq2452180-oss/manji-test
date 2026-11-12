@@ -1,0 +1,4 @@
+# 语音通话附加依赖：python -m pip install -r src/requirements-rtc.txt
+tls-sig-api-v2==1.1
+tencentcloud-sdk-python-trtc==3.1.177
+tencentcloud-sdk-python-common==3.1.204

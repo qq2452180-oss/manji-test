@@ -1,0 +1,86 @@
+/* Adapted from the mini program's login and profile pages. */
+.login-page { display:flex; flex-direction:column; padding:32px 28px calc(40px + env(safe-area-inset-bottom)); min-height:100dvh; }
+.login-brand { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px 0 40px; }
+.brand-mark { width:56px; height:56px; margin-bottom:12px; border-radius:16px 16px 16px 5px; text-align:center; line-height:56px; color:#fff9f4; background:#D86545; font-family:"Songti SC",serif; font-size:30px; }
+.brand-title { font-family:"Songti SC",serif; font-size:30px; text-align:center; letter-spacing:7px; padding-left:7px; font-weight:400; }
+.brand-caption { margin-top:9px; text-align:center; color:#776D64; font-size:14px; line-height:1.8; }
+.login-actions { width:100%; max-width:420px; margin:0 auto; }
+.login-heading { font-size:18px; font-weight:500; margin-bottom:8px; }
+.login-note,.login-footnote,.login-file-status { color:#776D64; font-size:13px; line-height:1.7; }
+.login-note { margin-bottom:20px; } .login-footnote { margin-top:16px; text-align:center; font-size:12px; }
+.login-file-status { min-height:21px; margin-top:6px; }
+.login-actions .notice { text-align:center; }
+.profile-page { display:flex; flex-direction:column; padding-top:24px; }
+.identity-card { padding:20px 16px 0; background:#fffcf7; border:1px solid rgba(103,75,55,.10); border-radius:16px; }
+.identity-main { display:flex; align-items:center; gap:14px; padding-bottom:18px; }
+.avatar { display:block; flex:none; width:64px; height:64px; border-radius:50%; background:#edddd0; object-fit:cover; }
+.avatar-placeholder { position:relative; overflow:hidden; background:#edddd0; }
+.avatar-head { position:absolute; width:38%; height:38%; left:31%; top:20%; background:#c99476; border-radius:50%; }
+.avatar-body { position:absolute; width:70%; height:48%; left:15%; top:64%; background:#c99476; border-radius:50% 50% 0 0; }
+.identity-copy { flex:1; min-width:0; }
+.identity-name { color:#2e2925; font-size:20px; line-height:1.4; font-weight:600; overflow-wrap:anywhere; }
+.identity-caption { margin-top:6px; color:#776d64; font-size:13px; line-height:1.6; }
+.edit-link { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:46px; padding:10px 0; background:transparent; border-top:1px solid rgba(103,75,55,.10); border-radius:0; font-size:14px; color:#a75c46; text-align:left; }
+.edit-link > span:last-child { font-size:22px; }
+.login-action { margin-bottom:16px; }
+.profile-notice { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; padding:12px; border-radius:10px; background:#f7e7dd; color:#9e4a3a; font-size:13px; }
+.retry-link { flex:none; min-height:44px; padding:4px 0; background:transparent; color:#9e4a3a; font-size:13px; }
+.profile-menu { margin-top:14px; border:1px solid rgba(103,75,55,.10); border-radius:14px; overflow:hidden; background:#fffcf7; }
+.profile-menu-row { display:flex; align-items:center; gap:12px; width:100%; padding:16px; text-align:left; background:transparent; }
+.profile-menu-row + .profile-menu-row { border-top:1px solid rgba(103,75,55,.08); border-radius:0; }
+.menu-icon,.book-icon { display:flex; flex:none; align-items:center; justify-content:center; width:38px; height:38px; border-radius:11px; }
+.membership-icon { background:#f4ebd9; }
+.membership-icon i { width:15px; height:15px; border:1.5px solid #ab884c; border-radius:2.5px; transform:rotate(45deg); }
+.settings-icon { flex-direction:column; gap:4.5px; background:#eaf0e9; }
+.settings-icon i { position:relative; width:17px; height:1.5px; background:#66836b; border-radius:1.5px; }
+.settings-icon i::after { content:""; position:absolute; left:3.5px; top:-2px; width:3.5px; height:5.5px; border:1px solid #66836b; background:#eaf0e9; border-radius:1.5px; }
+.settings-icon i:nth-child(2)::after { left:10.5px; }
+.book-icon { background:#f7e7dd; }
+.book-icon i { width:16px; height:20px; border:1.5px solid #a75c46; border-left-width:3.5px; border-radius:1.5px 3.5px 3.5px 1.5px; }
+.menu-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:3px; }
+.menu-title { font-size:16px; font-weight:600; }
+.menu-caption { color:#776d64; font-size:12.5px; line-height:1.5; }
+.menu-arrow { color:#a75c46; font-size:23px; }
+.profile-footer { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-top:40px; }
+.footer-note { color:#9b9085; font-family:"Songti SC",serif; font-size:13.5px; letter-spacing:2px; }
+.logout-link { margin-top:10px; min-height:44px; padding:10px 20px; background:transparent; color:#776d64; font-size:13.5px; }
+.dialog-done { margin-top:24px; }
+.profile-edit-page { padding:24px 20px calc(32px + env(safe-area-inset-bottom)); }
+.loading-copy { padding:32px 0; text-align:center; color:#776d64; font-size:14px; }
+.avatar-section { display:flex; flex-direction:column; align-items:center; padding:12px 0 28px; }
+.avatar-chooser { display:block; width:80px; height:80px; padding:0; border-radius:50%; background:#edddd0; }
+.edit-avatar { display:block; width:80px; height:80px; border-radius:50%; object-fit:cover; }
+.avatar-caption { margin-top:10px; color:#a75c46; font-size:14px; }
+.name-field { padding:14px 16px; border:1px solid rgba(103,75,55,.10); border-radius:12px; background:#fffcf7; }
+.field-label { display:block; margin-bottom:8px; color:#776d64; font-size:13px; }
+.name-field input { width:100%; min-height:44px; font-size:17px; line-height:1.5; color:#2e2925; background:transparent; border:0; outline-offset:4px; }
+.name-field input::placeholder { color:#aaa094; font-size:15px; }
+.field-note { margin:10px 4px 20px; color:#8c8075; font-size:12.5px; line-height:1.6; }
+.save-button,.retry-button { margin-top:12px; }
+@media(min-width:760px) { .login-page { padding:40px 48px; } .login-brand { padding-bottom:48px; } }
+.developer-login { margin-top: 36px; color: #776d64; }
+.developer-login summary { min-height: 44px; padding: 12px 0; font-size: 13px; cursor: pointer; }
+.developer-login[open] summary { margin-bottom: 12px; }
+.account-login-page { padding-top:20px; }
+.login-back { display:inline-flex; align-items:center; align-self:flex-start; min-height:44px; color:#887665; font-size:14px; }
+.account-login-page .login-brand { flex:none; padding:18px 0 30px; }
+.account-login-page .brand-mark { width:48px; height:48px; line-height:48px; font-size:25px; }
+.account-login-page .brand-title { font-size:26px; }
+.account-login-page .login-heading { font-family:"Songti SC","STSong",serif; font-size:23px; font-weight:600; line-height:1.55; }
+.account-login-page .login-note { margin-bottom:20px; line-height:1.8; }
+.account-modes { display:flex; gap:5px; padding:5px; margin-bottom:19px; border-radius:12px; background:#eee6db; }
+.account-modes button { flex:1; min-height:44px; padding:9px; border-radius:8px; background:transparent; color:#887464; font-size:15px; }
+.account-modes button.selected { background:#fffaf3; color:#9e563b; box-shadow:0 2px 6px rgba(85,58,35,.06); }
+.guest-account-note { margin-bottom:19px; padding:13px 15px; background:#eee9da; color:#79634e; border-radius:10px; font-size:13px; line-height:1.75; }
+.guest-account-note p + p { margin-top:7px; }
+.account-status { margin-bottom:12px; color:#897666; font-size:13px; }
+.account-check-error { margin-bottom:16px; color:#9e4a3a; font-size:13px; }
+.account-check-error .paper-link { min-height:36px; }
+.account-form .paper-field { margin:16px 0; }
+.account-field-note { margin:6px 0 0; color:#918170; font-size:12px; }
+.account-form .paper-input { min-height:53px; border-radius:10px; background:#fffaf4; border-color:#ded1c3; }
+.account-form .paper-input::placeholder { color:#a29486; font-size:14px; }
+.account-form .account-submit { margin-top:8px; min-height:55px; border-radius:12px; background:#cb694a; }
+.account-login-page .developer-login { margin-top:23px; padding-top:10px; border-top:1px solid rgba(145,119,95,.14); }
+.account-login-page .developer-login summary { color:#978877; font-size:12px; }
+@media(max-width:350px) { .account-login-page { padding-left:20px; padding-right:20px; } .account-login-page .login-heading { font-size:21px; } }

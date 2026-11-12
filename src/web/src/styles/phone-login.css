@@ -1,0 +1,42 @@
+.phone-login-page { max-width:560px; margin:0 auto; padding:20px 28px calc(36px + env(safe-area-inset-bottom)); }
+.login-topline { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; }
+.phone-login-page .login-brand { padding:36px 0 44px; }
+.phone-login-page .brand-mark { width:56px; height:56px; line-height:56px; font-size:30px; }
+.phone-login-page .brand-title { font-size:28px; }
+.phone-login-page .login-heading { font-size:26px; margin-bottom:8px; }
+.phone-login-page .login-note { font-size:15px; margin-bottom:28px; }
+.phone-login-page .paper-field { margin:0 0 22px; }
+.phone-login-page .paper-field-label { margin-bottom:9px; font-size:15px; color:#5f554b; }
+.phone-input-wrap,.code-input-wrap { display:flex; align-items:center; min-height:58px; border:1px solid #d9cdbf; border-radius:12px; background:#fffaf4; transition:border-color .15s,box-shadow .15s; }
+.phone-input-wrap:focus-within,.code-input-wrap:focus-within { border-color:#ba775d; box-shadow:0 0 0 3px #cb694a14; }
+.phone-prefix { flex:none; padding:0 15px 0 17px; border-right:1px solid #e6dbce; font-size:16px; color:#6e6054; }
+.phone-login-page .phone-input-wrap .paper-input,.phone-login-page .code-input-wrap .paper-input { flex:1; min-width:0; width:100%; height:56px; padding:12px 14px; border:0; border-radius:12px; background:transparent; box-shadow:none; font-size:18px; outline:none; }
+.phone-login-page .paper-input::placeholder { color:#998c7e; font-size:15px; letter-spacing:0; }
+.phone-login-page .code-input-wrap .paper-input { padding-right:6px; }
+.send-code { flex:none; min-width:108px; min-height:44px; padding:10px 12px; margin-right:3px; border:0; border-radius:8px; background:transparent; color:#a8553c; font-size:14px; font-weight:500; white-space:nowrap; }
+.send-code:hover:not(:disabled) { background:#f8eee4; }
+.send-code:disabled { color:#97887a; opacity:1; cursor:default; }
+.phone-login-page .field-invalid { border-color:#b4523e; }
+.demo-code-hint { margin:10px 2px 0; color:#537460; font-size:13px; line-height:1.8; }
+.demo-code-hint strong { letter-spacing:2px; font-size:15px; }
+.demo-code-hint span { display:block; color:#8b7e70; font-size:12px; }
+.phone-login-page .account-submit { display:flex; align-items:center; justify-content:center; gap:16px; width:100%; min-height:58px; margin-top:28px; border-radius:12px; background:#cb694a; font-size:17px; }
+.phone-login-page .account-submit span { font-size:21px; font-weight:400; }
+.phone-login-page .account-error { text-align:left; margin:0 0 14px; font-size:14px; line-height:1.6; }
+.phone-login-page .prototype-note { margin-top:20px; color:#8b7e70; font-size:12px; line-height:1.8; }
+.phone-login-success { padding:12px 0 8px; text-align:center; }
+.phone-success-icon { display:grid; place-items:center; width:64px; height:64px; margin:0 auto 24px; border-radius:50%; background:#e4ede1; color:#587a60; }
+.phone-success-icon svg { width:32px; height:32px; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.phone-login-success .login-heading:focus { outline:none; }
+.phone-login-success .login-note { margin-bottom:10px; }
+.phone-login-success .restart-demo { width:100%; margin-top:8px; }
+@media (max-width:350px) {
+  .phone-login-page { padding-right:20px; padding-left:20px; }
+  .phone-login-page .login-brand { padding:24px 0 32px; }
+  .phone-login-page .login-heading { font-size:24px; }
+  .phone-login-page .paper-input::placeholder { font-size:13px; }
+  .send-code { min-width:98px; padding:10px 8px; font-size:13px; }
+}
+@media (max-height:700px) {
+  .phone-login-page .login-brand { padding:20px 0 28px; }
+}
