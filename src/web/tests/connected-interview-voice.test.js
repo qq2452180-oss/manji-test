@@ -41,6 +41,10 @@ async function start(page, mode = 'voice') {
   await (entrance.exists() ? entrance : page.get('[data-testid="start-interview"]')).trigger('click');
   await flushPromises();
 }
+function summaryOpen(page) {
+  const dialog = page.find('[data-testid="call-summary"]');
+  return dialog.exists() && dialog.element.open;
+}
 let hidden;
 beforeEach(() => {
   hidden = false;
@@ -222,7 +226,8 @@ describe('connected voice entrance', () => {
     const page = open(); await flushPromises();
     expect(page.get('[data-testid="interview-entry-choice"]').findAll('button').map(button => button.text()))
       .toEqual(['语音访谈', '文字访谈']);
-    expect(page.findAll('button')).toHaveLength(2);
+    expect(page.get('main').findAll('button')).toHaveLength(2);
+    expect(summaryOpen(page)).toBe(false);
     expect(page.get('h1').text()).toBe(topic.title);
     expect(page.find('textarea').exists()).toBe(false);
     expect(page.find('[data-testid="finish-interview"]').exists()).toBe(false);
@@ -282,15 +287,117 @@ describe('connected voice entrance', () => {
     expect(page.get('[data-testid="start-interview"]').element.disabled).toBe(false);
   });
 
-  it('waits for stop and the saved final turn before navigating to organization', async () => {
-    api.getInterview.mockResolvedValue(snapshot([opening, answer, reply]));
+  it('closes audio immediately, waits for the final saved turn, and only organizes after confirmation', async () => {
+    vi.useFakeTimers();
     const page = open('?session_id=41'); await start(page);
     const stopped = deferred(); api.stopVoiceCall.mockReturnValueOnce(stopped.promise);
     await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
     expect(media.close).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
-    stopped.resolve(call('STOPPED')); await flushPromises();
+    expect(summaryOpen(page)).toBe(false);
+    expect(page.get('[data-testid="finish-interview"]').element.disabled).toBe(true);
+    await page.get('[data-testid="finish-interview"]').trigger('click');
+    expect(api.stopVoiceCall).toHaveBeenCalledExactlyOnceWith(callId);
+
+    stopped.resolve({ ...call('STOPPED'), turn_pending: true }); await flushPromises();
+    expect(summaryOpen(page)).toBe(false);
+    api.getInterview.mockResolvedValue(snapshot([opening, answer, reply]));
+    api.getVoiceCall.mockResolvedValue(call('STOPPED'));
+    await vi.advanceTimersByTimeAsync(1000); await flushPromises();
+    expect(summaryOpen(page)).toBe(true);
+    expect(page.get('[data-testid="call-summary"]').element.tagName).toBe('DIALOG');
+    expect(page.get('[data-testid="generate-biography"]').element.disabled).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(api.startVoiceCall).toHaveBeenCalledTimes(1);
+
+    await page.get('[data-testid="generate-biography"]').trigger('click'); await flushPromises();
     expect(navigate).toHaveBeenCalledExactlyOnceWith('./organizing.html?session_id=41');
+    expect(api.startInterview).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['topic', '?session_id=41&topic_id=12&chapter_id=3', './index.html?chapter_id=3'],
+    ['global', '?session_id=41', './index.html'],
+    ['supplement', '?topic_id=12&chapter_id=3&story_id=81', './story.html?story_id=81'],
+  ])('defers biography generation while retaining the %s interview for recovery', async (kind, search, back) => {
+    const value = kind === 'global' ? globalSnapshot([globalOpening, answer, reply]) : {
+      ...snapshot([opening, answer, reply]), ...(kind === 'supplement' ? { target_story_id: '81' } : {}),
+    };
+    api.getInterview.mockResolvedValue(value);
+    const page = open(search); await start(page);
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(summaryOpen(page)).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+
+    await page.get('[data-testid="chat-later"]').trigger('click'); await flushPromises();
+    expect(navigate).toHaveBeenCalledExactlyOnceWith(back);
+    expect(api.stopVoiceCall).toHaveBeenCalledExactlyOnceWith(callId);
+    expect(api.startInterview).not.toHaveBeenCalled();
+    expect(new URLSearchParams(location.search).get('session_id')).toBe('41');
+    expect(JSON.parse(sessionStorage.getItem('manji.connected.draft.41')).owner).toBe('owner-a');
+  });
+
+  it('keeps the original story target when explicitly generating from a supplement call', async () => {
+    api.getInterview.mockResolvedValue({ ...snapshot([opening, answer, reply]), target_story_id: '81' });
+    const page = open('?topic_id=12&chapter_id=3&story_id=81'); await start(page);
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(navigate).not.toHaveBeenCalled();
+    await page.get('[data-testid="generate-biography"]').trigger('click'); await flushPromises();
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('./organizing.html?session_id=41&story_id=81');
+  });
+
+  it.each(['close', 'escape'])('leaves the call paused after dismissing the summary with %s until explicitly continued', async method => {
+    api.getInterview.mockResolvedValue(snapshot([opening, answer, reply]));
+    const page = open('?session_id=41'); await start(page);
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(summaryOpen(page)).toBe(true);
+    if (method === 'escape') await page.get('[data-testid="call-summary"]').trigger('cancel');
+    else await page.get('[data-testid="close-call-summary"]').trigger('click');
+    await flushPromises();
+    expect(summaryOpen(page)).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(page.get('[data-testid="voice-call"]').text()).toContain('已暂停');
+    expect(media.prepare).toHaveBeenCalledTimes(1);
+    expect(api.startVoiceCall).toHaveBeenCalledTimes(1);
+
+    await start(page);
+    expect(media.prepare).toHaveBeenCalledTimes(2);
+    expect(api.startVoiceCall).toHaveBeenCalledTimes(2);
+    expect(api.startInterview).not.toHaveBeenCalled();
+  });
+
+  it.each(['stop', 'stop-sync', 'final-sync'])('retains a recoverable paused call instead of offering generation after a %s failure', async failure => {
+    api.getInterview.mockResolvedValue(snapshot([opening, answer, reply]));
+    const page = open('?session_id=41'); await start(page);
+    if (failure === 'stop') api.stopVoiceCall.mockRejectedValueOnce(new Error('停止通话失败，请重试'));
+    else {
+      if (failure === 'final-sync') api.getInterview.mockResolvedValueOnce(snapshot([opening, answer, reply]));
+      api.getInterview.mockRejectedValueOnce(new Error('记录读取失败，请重试'));
+    }
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(media.close).toHaveBeenCalled();
+    expect(summaryOpen(page)).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(page.get('[role="alert"]').text()).toContain('失败');
+    expect(page.get('[data-testid="voice-call"]').text()).toContain('已暂停');
+
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(summaryOpen(page)).toBe(true);
+    expect(page.get('[data-testid="generate-biography"]').element.disabled).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('discards an open call summary when the account changes', async () => {
+    api.getInterview.mockResolvedValue(snapshot([opening, answer, reply]));
+    const page = open('?session_id=41'); await start(page);
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(summaryOpen(page)).toBe(true);
+    sessionStorage.setItem('manji.auth_token', 'owner-b');
+    window.dispatchEvent(new Event('manji:auth-changed')); await flushPromises();
+    expect(summaryOpen(page)).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(page.text()).toContain('登录状态已变化');
+    expect(api.startVoiceCall).toHaveBeenCalledTimes(1);
   });
 
   it('closes on background and returns paused without reopening the microphone', async () => {
@@ -342,11 +449,33 @@ describe('connected voice entrance', () => {
     expect(api.startInterview).not.toHaveBeenCalled();
   });
 
-  it('can end a call before the first answer without starting organization', async () => {
+  it('offers a saved-call summary before the first answer with generation unavailable', async () => {
     const page = open(); await start(page);
     await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
     expect(api.stopVoiceCall).toHaveBeenCalledWith(callId);
+    expect(summaryOpen(page)).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(page.get('[data-testid="generate-biography"]').element.disabled).toBe(true);
+    expect(page.get('[data-testid="call-summary"]').text()).toMatch(/还没有|尚未/);
+    await page.get('[data-testid="generate-biography"]').trigger('click'); await flushPromises();
+    expect(navigate).not.toHaveBeenCalled();
+    await page.get('[data-testid="chat-later"]').trigger('click'); await flushPromises();
     expect(navigate).toHaveBeenCalledExactlyOnceWith('./index.html?chapter_id=3');
+  });
+
+  it('preserves an unsent draft and explains why it must be sent before generation', async () => {
+    const text = '我还记得那条上学的路。';
+    sessionStorage.setItem('manji.connected.draft.41', JSON.stringify({ owner: 'owner-a', text, error: '', pendingInput: null }));
+    api.getInterview.mockResolvedValue(snapshot([opening, answer, reply]));
+    const page = open('?session_id=41'); await start(page);
+    await page.get('[data-testid="finish-interview"]').trigger('click'); await flushPromises();
+    expect(summaryOpen(page)).toBe(true);
+    expect(page.get('[data-testid="generate-biography"]').element.disabled).toBe(true);
+    expect(page.get('[data-testid="call-summary"]').text()).toContain('文字');
+    expect(page.get('[data-testid="call-summary"]').text()).toContain('发送');
+    await page.get('[data-testid="chat-later"]').trigger('click'); await flushPromises();
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('./index.html?chapter_id=3');
+    expect(JSON.parse(sessionStorage.getItem('manji.connected.draft.41')).text).toBe(text);
   });
 
   it('can cancel while microphone permission is pending without connecting afterwards', async () => {

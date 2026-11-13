@@ -57,6 +57,15 @@
 .is-call-screen .connected-call-control:disabled { opacity:.45; cursor:default; }
 .is-call-screen .connected-call-text { min-height:44px; padding:10px 18px; border:0; background:none; color:var(--prototype-muted); font:inherit; font-size:13px; line-height:1.6; }
 .is-call-screen .prototype-interview-error { margin:0; text-align:center; }
+.connected-call-summary { box-sizing:border-box; width:min(440px,calc(100% - 40px)); max-height:calc(100dvh - 40px); margin:auto; padding:36px 28px 24px; overflow:auto; border:1px solid var(--prototype-rule); border-radius:20px; background:var(--prototype-paper); color:var(--prototype-ink); font:inherit; text-align:center; box-shadow:0 20px 70px rgba(62,46,32,.18); }
+.connected-call-summary::backdrop { background:rgba(47,39,31,.32); }
+.connected-call-summary-close { position:absolute; top:8px; right:8px; display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; background:transparent; color:var(--prototype-muted); font:inherit; font-size:26px; cursor:pointer; }
+.connected-call-summary-status { margin:0 0 14px; color:var(--prototype-muted); font-size:14px; line-height:1.6; }
+.connected-call-summary h2 { margin:0; font-size:24px; font-weight:600; line-height:1.55; text-wrap:balance; }
+.connected-call-summary #call-summary-description { margin:18px 0 26px; color:var(--prototype-muted); font-size:16px; line-height:1.9; overflow-wrap:anywhere; }
+.connected-call-summary-actions { display:grid; gap:8px; }
+.connected-call-summary button:disabled { opacity:.45; cursor:default; }
+.connected-call-summary button:focus-visible { outline:2px solid var(--prototype-gold); outline-offset:3px; }
 @keyframes connected-call-breathe { 0%,100% { transform:scale(1); opacity:.25; } 50% { transform:scale(1.055); opacity:.4; } }
 @media (max-width:759px) {
   .connected-interview-choice-copy { width:min(100%,320px); margin-bottom:36px; }

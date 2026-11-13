@@ -23,6 +23,7 @@ const targetStoryId = ref(identifier('story_id')), targetStoryTitle = ref('');
 const topic = ref(null), chapterTitle = ref(''), messages = ref([]), status = ref('');
 const sessionLoaded = ref(false), nextNode = ref(null);
 const draft = ref(''), error = ref(''), loading = ref(true), busy = ref(false), paused = ref(true);
+const callSummary = ref(null), endCallButton = ref(null), endingCall = ref(false);
 const needsRefresh = ref(false), savePending = ref(false), authChanged = ref(false), authRequired = ref(false), pageVisible = ref(!document.hidden);
 const invalid = ref(['session_id', 'topic_id', 'chapter_id', 'story_id'].some(name => params.has(name) && !identifier(name)));
 const interviewScope = ref(!sessionId.value && !topicId.value && !chapterId && !targetStoryId.value ? 'global' : null);
@@ -42,10 +43,11 @@ const legacyReadOnly = computed(() => sessionLoaded.value && sessionId.value && 
   && !(status.value === 'writing_pending' && ['memory_update', 'summary'].includes(nextNode.value)));
 const canSend = computed(() => sessionId.value && !busy.value && !loading.value && !paused.value && !pendingReply.value
   && !finished.value && !legacyReadOnly.value && !needsRefresh.value && !savePending.value && !authChanged.value && draft.value.trim());
+const hasNarration = computed(() => messages.value.some(message => message.role === 'user'));
 const canFinish = computed(() => sessionId.value && !busy.value && !loading.value && !pendingReply.value
   && !finished.value && !legacyReadOnly.value && !needsRefresh.value && !savePending.value && !authChanged.value && !draft.value.trim()
   && !voiceSettling.value
-  && messages.value.some(message => message.role === 'user'));
+  && hasNarration.value);
 let alive = true, generation = 0, owner = getAuthToken(), pendingInput = null;
 let completedStoryId = '', resumeKind = sessionId.value ? 'home_return' : null, resumeRequestId = null;
 const current = version => alive && pageVisible.value && generation === version && !authChanged.value;
@@ -391,7 +393,7 @@ async function finish() {
   });
 }
 function endCall() {
-  if (voiceSettling.value) return;
+  if (voiceSettling.value || endingCall.value || callSummary.value?.open) return;
   if (busy.value) {
     // Cancelling connection also invalidates late permission/session responses.
     generation++;
@@ -399,14 +401,33 @@ function endCall() {
     navigate(back.value);
     return;
   }
+  endingCall.value = true;
   return exclusive(async version => {
+    error.value = '';
     if (!(await pause()) || !current(version)) return;
-    if (sessionId.value) await sync(version);
+    if (sessionId.value) {
+      needsRefresh.value = true;
+      await sync(version);
+    }
     if (!current(version) || pendingReply.value || savePending.value || needsRefresh.value) return;
-    if (messages.value.some(message => message.role === 'user') && !draft.value.trim()) {
-      navigate(organizingUrl(sessionId.value, { storyId: targetStoryId.value || undefined }));
-    } else navigate(back.value);
-  });
+    // The organizing page starts generation on mount, so ask before navigating there.
+    callSummary.value?.showModal();
+  }).finally(() => { endingCall.value = false; });
+}
+function closeCallSummary() {
+  callSummary.value?.close();
+  if (alive && pageVisible.value && !authChanged.value) endCallButton.value?.focus();
+}
+function generateBiography() {
+  if (!callSummary.value?.open || !canFinish.value || !current(generation)) return;
+  closeCallSummary();
+  return finish();
+}
+function chatLater() {
+  if (!callSummary.value?.open || busy.value || voiceSettling.value || !current(generation)) return;
+  saveDraft();
+  closeCallSummary();
+  navigate(back.value);
 }
 function resultUrl() {
   return status.value === 'completed' && completedStoryId
@@ -414,6 +435,7 @@ function resultUrl() {
     : organizingUrl(sessionId.value, { storyId: targetStoryId.value || undefined });
 }
 function changedIdentity() {
+  callSummary.value?.close();
   void voice.stop({ unload: true });
   generation++; authChanged.value = true; authRequired.value = false; paused.value = true;
   messages.value = []; topic.value = null; chapterTitle.value = ''; sessionId.value = '';
@@ -423,7 +445,7 @@ function changedIdentity() {
   document.title = '慢记 · 讲述';
   error.value = '登录状态已变化，请返回首页重新打开讲述。';
 }
-function hide() { pageVisible.value = false; generation++; void pause({ unload: true }); if (sessionId.value) needsRefresh.value = true; }
+function hide() { callSummary.value?.close(); pageVisible.value = false; generation++; void pause({ unload: true }); if (sessionId.value) needsRefresh.value = true; }
 function show() {
   pageVisible.value = true;
   // Reconcile the stopped call when returning; reopening the microphone needs a click.
@@ -529,9 +551,9 @@ onBeforeUnmount(() => {
               </svg></span>
               <span>{{ pendingReply || savePending || needsRefresh || error ? '重试' : paused && !busy ? '继续' : '暂停' }}</span>
             </button>
-            <button class="connected-call-control is-end" type="button" :disabled="voiceSettling" data-testid="finish-interview" @click="endCall">
+            <button ref="endCallButton" class="connected-call-control is-end" type="button" :disabled="voiceSettling || endingCall" data-testid="finish-interview" @click="endCall">
               <span class="connected-call-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13c5-5 13-5 18 0v4h-5v-4a12 12 0 0 0-8 0v4H3Z"/></svg></span>
-              <span>{{ busy && voicePhase !== 'connected' ? '取消' : '结束' }}</span>
+              <span>{{ endingCall ? '保存中' : busy && voicePhase !== 'connected' ? '取消' : '结束' }}</span>
             </button>
           </div>
           <button v-if="paused && !busy && !voiceSettling" class="connected-call-text" type="button" data-testid="switch-interview-mode" @click="switchMode">改用文字</button>
@@ -566,4 +588,19 @@ onBeforeUnmount(() => {
       </template>
     </template>
   </main>
+  <dialog v-if="showVoice" ref="callSummary" class="connected-call-summary" aria-labelledby="call-summary-title" aria-describedby="call-summary-description"
+    data-testid="call-summary" @cancel.prevent="closeCallSummary" @click.self="closeCallSummary">
+    <button class="connected-call-summary-close" type="button" aria-label="关闭，留在讲述页" data-testid="close-call-summary" @click="closeCallSummary">×</button>
+    <p class="connected-call-summary-status">通话已结束</p>
+    <h2 id="call-summary-title">要把这次讲述整理成传记吗？</h2>
+    <p id="call-summary-description">
+      <template v-if="draft.trim()">还有一段文字草稿未发送，发送后就能生成传记。也可以先保留，下次继续。</template>
+      <template v-else-if="!hasNarration">这次还没有保存的讲述，暂时无法生成传记。下次想聊时，可以继续这段讲述。</template>
+      <template v-else>讲述已保存，小暖可以帮您整理成故事，写进传记里。也可以先放一放，下次继续聊。</template>
+    </p>
+    <div class="connected-call-summary-actions">
+      <button class="prototype-interview-action" type="button" :disabled="!canFinish" data-testid="generate-biography" @click="generateBiography">生成传记</button>
+      <button class="prototype-interview-secondary" type="button" :disabled="busy || voiceSettling" data-testid="chat-later" autofocus @click="chatLater">下次再说</button>
+    </div>
+  </dialog>
 </template>
