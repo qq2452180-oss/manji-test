@@ -271,10 +271,10 @@ def preflight(target, before):
         # Compose merges volume entries by target. Keep the logical source name
         # and existing top-level volume definition; write no environment values.
         with os.fdopen(descriptor, 'w') as output:
-            json.dump({'services': {'app': {'volumes': [read_only_media]}}}, output)
-        # `compose run` has no --no-build option. The image was pulled above;
+            json.dump({'services': {'app': {'pull_policy': 'never', 'volumes': [read_only_media]}}}, output)
+        # Compose 2.30 `run` has no --pull or --no-build; use the overlay policy.
         # do not request --build, service ports, or production network aliases.
-        compose('-f', str(overlay), 'run', '--no-deps', '--pull', 'never',
+        compose('-f', str(overlay), 'run', '--no-deps',
                 '-d', '--name', name, 'app', image=target['image'])
         candidate = inspect(name)
         if candidate['Image'] != target['image_id']:
