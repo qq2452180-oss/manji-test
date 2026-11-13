@@ -115,7 +115,7 @@ class TencentRtcProvider:
             agent["TurnDetection"] = {"SemanticEagerness": c.semantic_eagerness}
         result = self._call("StartAIConversation", {
             "SdkAppId": c.sdk_app_id, "RoomId": str(room_id), "RoomIdType": 0, "SessionId": call_id,
-            "AgentConfig": agent, "STTConfig": {"Language": c.language,"VadSilenceTime": 1000},
+            "AgentConfig": agent, "STTConfig": {"Language": c.language,"VadSilenceTime": 1500},
             "LLMConfig": json.dumps(dict(LLMType="openai", Model=c.llm_model, APIUrl=c.llm_api_url,
                                          APIKey=c.llm_api_key, History=0, Streaming=False, Timeout=c.llm_timeout_seconds)),
             "TTSConfig": json.dumps(dict(TTSType="flow", Model=c.tts_model, VoiceId=c.voice_id,
