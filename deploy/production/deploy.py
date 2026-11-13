@@ -229,7 +229,11 @@ def check_record(item, before):
 def check_configuration(before, image=None):
     expected = deepcopy(before['config'])
     if image is not None:
+        old_image = expected['services']['app']['image']
         expected['services']['app']['image'] = image
+        extension = expected.get('x-app')
+        if isinstance(extension, dict) and extension.get('image') == old_image:
+            extension['image'] = image
     if configuration(image=image) != expected:
         raise DeploymentError('Compose settings changed beyond the application image')
 
