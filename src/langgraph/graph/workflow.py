@@ -1,6 +1,7 @@
 """访谈、成文、记忆更新与摘要组成四节点流程。"""
 
 from functools import partial
+import os
 from typing import Literal
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -30,17 +31,25 @@ def build_graph(
     *, story_repository: StoryRepository | None = None,
     profile_service: ProfileService | None = None,
     life_event_service: LifeEventService | None = None,
+    interview_mode: Literal["legacy", "agent"] | None = None,
 ) -> CompiledStateGraph:
     """访谈节点生成首问及逐轮回复，每轮后暂停等待新输入。
 
     默认 checkpoint 只存内存，进程重启后丢失；可传入持久化 checkpointer。
     章节故事继承原章节，全局故事不归章；传记更新由服务层在成文完成后调用。
     """
+    mode = interview_mode if interview_mode is not None else os.getenv("MANJI_INTERVIEW_MODE", "legacy")
+    if mode not in {"legacy", "agent"}:
+        raise ValueError("MANJI_INTERVIEW_MODE 必须为 legacy 或 agent")
+    interview = interview_node
+    if mode == "agent":
+        from ..node.interview_agent import interview_agent_node
+        interview = interview_agent_node
     if checkpointer is None:
         checkpointer = InMemorySaver()
     builder = StateGraph(WorkflowState)
 
-    builder.add_node("interview", interview_node)
+    builder.add_node("interview", interview)
     builder.add_node("writing", partial(writing_node, repository=story_repository))
     builder.add_node("memory_update", partial(
         memory_update_node, profile_service=profile_service,

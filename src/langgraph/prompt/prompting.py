@@ -21,6 +21,12 @@ def load_interview_system_prompt() -> str:
     return _read_prompt("interview/interview_system.md")
 
 
+def load_interview_agent_system_prompt() -> str:
+    """智能体访谈独立提示词，不叠加旧版首问规则。"""
+
+    return _read_prompt("interview/interview_agent_system.md")
+
+
 def load_biography_organizer_system_prompt() -> str:
     """传记成文：返回包含 title、body 的 JSON。"""
 

@@ -19,10 +19,14 @@ def docker(*args, check=True):
 
 
 FILES_CHECK = """
+import json
 import os
 from pathlib import Path
+from unittest.mock import patch
 from src.main import app
 from src.common.migrate import load_migrations
+from src.langgraph.graph import build_graph
+from src.langgraph.skills import get_skill_catalog, read_skill
 root = Path('/app')
 assert os.getuid() == 10001
 assert not list(root.rglob('.env*'))
@@ -31,6 +35,15 @@ assert not (root / 'src/web/node_modules').exists()
 assert not (root / 'src/tests').exists()
 assert load_migrations()
 assert (root / 'src/web/dist/index.html').is_file()
+assert os.environ.get('MANJI_INTERVIEW_MODE') == 'agent'
+skills = json.loads(get_skill_catalog())
+assert len(skills) == 9
+assert all(read_skill(skill['name']).strip() for skill in skills)
+with patch('src.langgraph.node.interview_agent._run_agent', return_value='Image smoke check') as agent:
+    result = build_graph().invoke({}, {'configurable': {'thread_id': 'image-smoke'}})
+    agent.assert_called_once()
+    assert result['opening_text'] == 'Image smoke check'
+print('Agent selected and all 9 skills readable: OK')
 print('Runtime imports, SQL, frontend, and secret-file exclusions: OK')
 """
 
