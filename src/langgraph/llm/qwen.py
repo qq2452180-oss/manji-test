@@ -76,11 +76,14 @@ def _timeout_seconds() -> float:
     return min(timeout, limit) if limit is not None else timeout
 
 
-def call_qwen(messages: Sequence[ChatMessage], *, json_output: bool = False) -> str:
+def call_qwen(
+    messages: Sequence[ChatMessage], *, json_output: bool = False, enable_thinking: bool = False,
+) -> str:
     """返回模型正文；入口负责加载 .env，本方法不修改进程环境。
 
     使用 API_KEY、BASE_URL 和 MANJI_TEXT_TIMEOUT_SECONDS。
-    固定使用 qwen3.8-max，关闭思考，不自动重试；由调用节点选择是否启用 JSON 输出。
+    固定使用 qwen3.8-max，不自动重试；由调用节点选择思考模式和 JSON 输出。
+    仅返回最终正文，模型的思考内容不进入播报或业务记录。
     """
 
     if not messages:
@@ -91,7 +94,7 @@ def call_qwen(messages: Sequence[ChatMessage], *, json_output: bool = False) -> 
         base_url=_required_env("BASE_URL"),
         timeout=_timeout_seconds(),
         max_retries=0,
-        extra_body={"enable_thinking": False},
+        extra_body={"enable_thinking": enable_thinking},
         model_kwargs={"response_format": {"type": "json_object"}} if json_output else {},
     )
     try:

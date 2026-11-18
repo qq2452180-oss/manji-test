@@ -10,7 +10,8 @@ from ..llm import call_qwen
 from ..prompt import load_interview_system_prompt
 from ..state import WorkflowState
 from .opening_context import (
-    first_opening_context, opening_context_data, saved_opening_context, validate_opening_context,
+    SUPPLEMENT_OPENING_TASK, first_opening_context, opening_context_data, saved_opening_context,
+    validate_opening_context,
 )
 from .interview_context import (
     interview_context_data, planning_context_data, saved_interview_context, saved_interview_plan,
@@ -52,8 +53,7 @@ def interview_node(state: WorkflowState) -> WorkflowState:
     if not messages:
         # 触发首问的指令只用于模型请求，持久化的首条消息仍为助手回复。
         if interview_context.get('supplement_story'):
-            history.append(('user', '现在继续补充这篇已有故事。结合 supplement_story 的原故事自然承接，'
-                            '邀请用户讲想补充或更正的内容，不要重新介绍自己或重复已经讲过的问题。'))
+            history.append(('user', SUPPLEMENT_OPENING_TASK))
         else:
             history.append(("user", "现在开始本场访谈，用户尚未回答。结合所选话题与已有记忆，"
                         "生成自然的开场和一个首问。有所选话题时，直接从这个话题中的熟悉活动、生活对象或通常做法进入，"
@@ -65,7 +65,7 @@ def interview_node(state: WorkflowState) -> WorkflowState:
         ("system", load_interview_system_prompt()),
         *background,
         *history,
-    ], json_output=False)
+    ], json_output=False, enable_thinking=False)
     assistant_text = _reply_text(raw)
     reply = AIMessage(
         id=next_message_id(messages), content=assistant_text, additional_kwargs=metadata,

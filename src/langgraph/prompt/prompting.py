@@ -16,15 +16,9 @@ def _read_prompt(relative_path: str) -> str:
 
 
 def load_interview_system_prompt() -> str:
-    """文字、语音及图片访谈：返回小暖的纯文本回复。"""
+    """加载文字、语音与图片访谈共用的传记专家提示词。"""
 
-    return _read_prompt("interview/interview_system.md")
-
-
-def load_interview_agent_system_prompt() -> str:
-    """智能体访谈独立提示词，不叠加旧版首问规则。"""
-
-    return _read_prompt("interview/interview_agent_system.md")
+    return _read_prompt("interview/interview_biographer_system.md")
 
 
 def load_biography_organizer_system_prompt() -> str:

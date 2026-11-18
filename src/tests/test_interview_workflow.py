@@ -16,6 +16,7 @@ import pytest
 from src.common.dialogue.message_ids import messages_to_context
 from src.langgraph.graph import build_graph
 from src.langgraph.node.interview import interview_node
+from src.langgraph.node.opening_context import SUPPLEMENT_OPENING_TASK
 from src.langgraph.node.summary import _user_materials
 from src.langgraph.node.writing import _build_writing_messages
 from src.service.interview import InterviewError, InterviewService
@@ -661,6 +662,29 @@ def test_first_message_metadata_is_detached_in_both_directions(flow):
     assert metadata["opening_context"]["previous_story_summary"] == SUMMARY
     metadata["interview_context"]["life_event_context"]["events"].clear()
     assert memory["life_event_context"]["events"] == original["life_event_context"]["events"]
+
+
+@pytest.mark.parametrize("mode,supplement", [
+    ("first", False), ("first", True),
+    ("returning_without_summary", False), ("returning_without_summary", True),
+    ("recap", False),
+])
+def test_opening_preserves_business_context_and_selects_supplement_task(flow, mode, supplement):
+    opening = {"mode": mode, "previous_story_id": 1 if mode == "recap" else None,
+               "previous_story_summary": "已有故事。" if mode == "recap" else ""}
+    context = {"supplement_story": {"story_id": 1, "body": "原故事。"}} if supplement else {}
+    state = {"opening_context": opening, "interview_context": context}
+    before = deepcopy(state)
+
+    result = interview_node(state)
+
+    sent = convert_to_messages(flow.model.call_args.args[0])
+    assert (sent[-1].content == SUPPLEMENT_OPENING_TASK) == supplement
+    assert state == before
+    assert result["messages"][0].additional_kwargs == {
+        "opening_context": opening, "interview_context": context,
+    }
+    assert set(result) == {"opening_text", "messages"}
 
 
 @pytest.mark.parametrize("opening", [True, False], ids=["opening", "followup"])

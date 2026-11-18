@@ -8,6 +8,13 @@ from langchain_core.messages import AIMessage, BaseMessage
 from ..state import OpeningContext
 
 
+SUPPLEMENT_OPENING_TASK = (
+    "现在补充一篇已有故事，本场用户尚未发言。直接从 supplement_story 正文中选一处有依据的行动、"
+    "人物往来或日常做法，顺着这处问一个能让本人讲经过的开放问题，问完就停。原故事是资料来源，不据此判断上次谈话的时间或停点。"
+    "不要请用户挑选补充方向或从头复述。若原文缺少可依托的内容，再邀请本人补充或更正。"
+)
+
+
 def first_opening_context() -> OpeningContext:
     return {"mode": "first", "previous_story_id": None, "previous_story_summary": ""}
 
