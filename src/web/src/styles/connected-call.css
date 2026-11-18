@@ -29,13 +29,13 @@
 .is-call-screen .connected-call-status::before { content:''; width:5px; height:5px; border-radius:50%; background:#9caa8d; }
 .is-call-screen:has(.voice-ring.is-connecting) .connected-call-status::before { background:#bc9c65; }
 .is-call-screen:has(.voice-ring.is-paused) .connected-call-status::before { background:#b9b0a4; }
-.is-call-screen .voice-ring { width:176px; height:176px; margin:8px auto; }
-.is-call-screen .voice-ring .ring { border-color:#bc9c65; transition:transform .18s ease-out,opacity .25s ease; }
-.is-call-screen .voice-ring .r1 { opacity:.28; }
-.is-call-screen .voice-ring .r2 { inset:18px; opacity:.35; }
-.is-call-screen .voice-ring .r3 { inset:36px; opacity:.45; background:rgba(228,212,180,.12); }
+.is-call-screen .voice-ring { --ring-size:216px; width:min(100%,var(--ring-size)); height:auto; aspect-ratio:1; margin:8px auto; }
+.is-call-screen .voice-ring .ring { border:2px solid #bc9c65; transition:transform .18s ease-out,opacity .25s ease; }
+.is-call-screen .voice-ring .r1 { opacity:.36; }
+.is-call-screen .voice-ring .r2 { inset:10%; opacity:.46; }
+.is-call-screen .voice-ring .r3 { inset:20%; opacity:.6; background:rgba(228,212,180,.22); }
 .is-call-screen .voice-ring .ring-center { color:#9b7d4b; }
-.is-call-screen .voice-ring .ring-center svg { width:28px; height:28px; }
+.is-call-screen .voice-ring .ring-center svg { width:18%; height:18%; }
 .is-call-screen .voice-ring.is-listening .r1 { transform:scale(calc(1 + var(--voice-activity,0) * .09)); }
 .is-call-screen .voice-ring.is-listening .r2 { transform:scale(calc(1 + var(--voice-activity,0) * .05)); }
 .is-call-screen .voice-ring.is-speaking .r1,
@@ -77,14 +77,14 @@
   .is-call-screen .prototype-interview-header { min-height:64px; }
   .is-call-screen .connected-voice { gap:28px; min-height:350px; padding-top:12px; }
   .is-call-screen .connected-call-identity h1 { font-size:30px; }
-  .is-call-screen .voice-ring { width:160px; height:160px; }
+  .is-call-screen .voice-ring { --ring-size:200px; }
   .is-call-screen .connected-call-caption { min-height:76px; }
 }
 @media (max-height:680px) {
   .connected-interview-choice { padding-top:20px; padding-bottom:32px; }
   .connected-interview-choice-copy { margin-bottom:28px; }
   .is-call-screen .connected-voice { gap:20px; min-height:300px; padding-top:4px; padding-bottom:16px; }
-  .is-call-screen .voice-ring { width:140px; height:140px; margin:0 auto; }
+  .is-call-screen .voice-ring { --ring-size:168px; margin:0 auto; }
   .is-call-screen .connected-call-caption { min-height:50px; }
   .is-call-screen .connected-call-actions { gap:6px; padding-top:4px; }
 }
