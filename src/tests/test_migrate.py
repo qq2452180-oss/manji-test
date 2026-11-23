@@ -35,6 +35,7 @@ SCHEMA_FILES = (
     "content/0009_story_revisions.sql",
     "content/0010_biography.sql",
     "interview/0011_rtc_calls.sql",
+    "account/0012_sms_login.sql",
 )
 BUSINESS_TABLES = {
     "users", "interview_sessions", "media", "user_profiles", "life_events", "chapter", "story", "topic", "story_revisions", "biography", "rtc_calls",
@@ -78,7 +79,7 @@ def context_message(identifier, *, source=None):
 
 def test_schema_files_are_complete_ordered_and_keep_relative_category_paths():
     schema = load_migrations()
-    assert [item.version for item in schema] == [f"{number:04d}" for number in range(1, 12)]
+    assert [item.version for item in schema] == [f"{number:04d}" for number in range(1, 13)]
     assert tuple(item.filename for item in schema) == SCHEMA_FILES
     assert "CREATE FUNCTION interview_context_ids_valid" in schema[1].sql
     assert "interview_sessions_context_ids_check" in schema[1].sql
@@ -127,11 +128,11 @@ def test_missing_or_duplicate_schema_version_is_rejected_across_categories(schem
 
 
 def test_cli_requires_only_current_database_variable_and_hides_connection_details(monkeypatch, capsys):
-    monkeypatch.delenv("MANJILU_DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("MANJI_DATABASE_URL", "old-app-must-not-be-used")
     assert main([]) == 1
-    assert capsys.readouterr().err == "MANJILU_DATABASE_URL is required\n"
-    monkeypatch.setenv("MANJILU_DATABASE_URL", "private-database-password")
+    assert capsys.readouterr().err == "DATABASE_URL is required\n"
+    monkeypatch.setenv("DATABASE_URL", "private-database-password")
 
     def unavailable(*args, **kwargs):
         raise psycopg.OperationalError("private-database-password")
@@ -356,7 +357,7 @@ def test_concurrent_initializations_serialize_and_leave_business_tables_empty(da
 
 
 def test_cli_initialize_and_check_succeed(database_url, monkeypatch, capsys):
-    monkeypatch.setenv("MANJILU_DATABASE_URL", database_url)
+    monkeypatch.setenv("DATABASE_URL", database_url)
     assert main([]) == 0
     assert f'"{current_versions()[-1]}"' in capsys.readouterr().out
     for command in ("init", "migrate"):
@@ -384,7 +385,10 @@ def test_incremental_revision_upgrade_preserves_existing_stories_and_history(dat
                                           (user_id,str(session_id))).fetchone()[0]
         before = connection.execute('SELECT title,body,source_session_id,create_time FROM story WHERE id=%s',(story_id,)).fetchone()
         old_ledger = connection.execute('SELECT * FROM src_schema_migrations ORDER BY version').fetchall()
-        assert apply_migrations(connection) == ['0009', '0010', '0011']
+        assert apply_migrations(connection) == ['0009', '0010', '0011', '0012']
+        assert connection.execute(
+            "SELECT username, password, phone_e164 FROM users WHERE id = %s", (user_id,),
+        ).fetchone() == ("upgrade-test", "hash", None)
         assert connection.execute('SELECT title,body,source_session_id,create_time FROM story WHERE id=%s',(story_id,)).fetchone() == before
         assert connection.execute('SELECT version,updated_time=create_time FROM story WHERE id=%s',(story_id,)).fetchone() == (1,True)
         assert connection.execute('SELECT context FROM interview_sessions WHERE id=%s',(session_id,)).fetchone() == (context,)
@@ -413,7 +417,7 @@ def test_biography_upgrade_keeps_supplemented_stories_unchanged(database_url):
             )
         before = connection.execute('SELECT * FROM story WHERE id=%s', (story_id,)).fetchone()
         revision = connection.execute('SELECT * FROM story_revisions WHERE story_id=%s', (story_id,)).fetchone()
-        assert apply_migrations(connection) == ['0010', '0011']
+        assert apply_migrations(connection) == ['0010', '0011', '0012']
         assert connection.execute('SELECT * FROM story WHERE id=%s', (story_id,)).fetchone() == before
         assert connection.execute('SELECT * FROM story_revisions WHERE story_id=%s', (story_id,)).fetchone() == revision
         assert connection.execute('SELECT COUNT(*) FROM biography').fetchone() == (0,)
@@ -447,7 +451,7 @@ def test_rtc_metadata_upgrade_preserves_existing_interview_and_story(database_ur
                 "INSERT INTO story (user_id, title, body, chapter_id) VALUES (%s, '旧标题', '旧正文', %s) RETURNING *",
                 (owner, chapter),
             ).fetchone()
-        assert apply_migrations(connection) == ["0011"]
+        assert apply_migrations(connection) == ["0011", "0012"]
         assert connection.execute("SELECT * FROM interview_sessions").fetchall() == [session]
         assert connection.execute("SELECT * FROM story").fetchall() == [story]
         assert connection.execute("SELECT COUNT(*) FROM rtc_calls").fetchone() == (0,)
@@ -457,3 +461,19 @@ def test_rtc_metadata_upgrade_preserves_existing_interview_and_story(database_ur
         # 当前服务不使用 RTC 表；历史迁移仍保留，就绪检查不再依赖该表。
         connection.execute("DROP TABLE rtc_calls")
         check_schema(connection)
+
+
+def test_phone_is_optional_unique_and_preserves_required_password(database_url):
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        apply_migrations(connection)
+        connection.execute(
+            "INSERT INTO users (username, password, phone_e164) VALUES "
+            "('legacy1', 'hash', NULL), ('legacy2', 'hash', NULL), ('mobile', 'hash', '+8613800000001')"
+        )
+        insert = "INSERT INTO users (username, password, phone_e164) VALUES ('another', %s, %s)"
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            connection.execute(insert, ("hash", "+8613800000001"))
+        with pytest.raises(psycopg.errors.CheckViolation):
+            connection.execute(insert, ("hash", "invalid"))
+        with pytest.raises(psycopg.errors.NotNullViolation):
+            connection.execute(insert, (None, "+8613800000002"))

@@ -119,7 +119,7 @@ def smoke(image, postgres_image):
             postgres_image,
         )
         for _ in range(60):
-            if docker('exec', database, 'pg_isready', '-U', 'postgres', '-d', 'manji_smoke_test', check=False).returncode == 0:
+            if docker('exec', database, 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-d', 'manji_smoke_test', check=False).returncode == 0:
                 break
             time.sleep(1)
         else:
@@ -128,7 +128,7 @@ def smoke(image, postgres_image):
         for command in ('init', 'check'):
             result = docker(
                 'run', '--rm', '--platform', 'linux/amd64', '--network', network,
-                '-e', 'MANJILU_DATABASE_URL=' + dsn, image,
+                '-e', 'DATABASE_URL=' + dsn, image,
                 'python', '-m', 'src.common.migrate', command,
             )
             print(result.stdout.strip(), flush=True)
@@ -137,7 +137,7 @@ def smoke(image, postgres_image):
             'run', '-d', '--platform', 'linux/amd64', '--name', app, '--network', network,
             '--read-only', '--tmpfs', '/tmp:rw,nosuid,size=64m',
             '--mount', 'type=volume,source=' + media + ',target=/app/data/media',
-            '-e', 'MANJILU_DATABASE_URL=' + dsn, '-e', 'MANJI_LANGGRAPH_RTC_ENABLED=false', image,
+            '-e', 'DATABASE_URL=' + dsn, '-e', 'RTC_ENABLED=false', image,
         )
         for _ in range(90):
             state = json.loads(docker('inspect', app).stdout)[0]['State']

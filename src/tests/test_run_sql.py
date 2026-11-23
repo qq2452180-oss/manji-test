@@ -13,7 +13,7 @@ from src.tools import run_sql
 @pytest.fixture
 def database(monkeypatch, tmp_path):
     monkeypatch.setattr(run_sql, "SRC_DIR", tmp_path)
-    monkeypatch.setenv("MANJILU_DATABASE_URL", "postgresql://fixture/database")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://fixture/database")
     connection = MagicMock()
     connection.__enter__.return_value = connection
     cursor = connection.cursor.return_value
@@ -106,13 +106,13 @@ def test_env_file_is_anchored_and_existing_environment_wins(
     database, monkeypatch, tmp_path, environment_override,
 ):
     (tmp_path / ".env").write_text(
-        "MANJILU_DATABASE_URL=postgresql://env-file/database\n", encoding="utf-8",
+        "DATABASE_URL=postgresql://env-file/database\n", encoding="utf-8",
     )
     other_directory = tmp_path / "working-directory"
     other_directory.mkdir()
     monkeypatch.chdir(other_directory)
     if not environment_override:
-        monkeypatch.delenv("MANJILU_DATABASE_URL")
+        monkeypatch.delenv("DATABASE_URL")
     assert run_sql.main(["--file", "memory/0004_user_profiles.sql"]) == 0
     expected = "postgresql://fixture/database" if environment_override else "postgresql://env-file/database"
     database.connect.assert_called_once_with(expected, autocommit=True, connect_timeout=10)
@@ -194,7 +194,7 @@ def test_database_override_keeps_connection_settings_and_env(database, monkeypat
     connection_info = conninfo_to_dict(delegate.call_args.kwargs["database_url"])
     assert connection_info["host"] == "fixture"
     assert connection_info["dbname"] == "manji_v2"
-    assert run_sql.os.environ["MANJILU_DATABASE_URL"] == "postgresql://fixture/database"
+    assert run_sql.os.environ["DATABASE_URL"] == "postgresql://fixture/database"
 
 
 def test_file_database_override_and_bare_name_resolve_module(database):

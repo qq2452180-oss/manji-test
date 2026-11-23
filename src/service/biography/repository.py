@@ -21,7 +21,7 @@ class BiographyRepository:
 
     def _connect(self):
         if not self._database_url:
-            raise psycopg.OperationalError("MANJILU_DATABASE_URL is not configured")
+            raise psycopg.OperationalError("DATABASE_URL is not configured")
         return psycopg.connect(self._database_url, row_factory=dict_row, connect_timeout=5)
 
     def get(self, user_id: int) -> dict | None:

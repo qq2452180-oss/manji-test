@@ -36,8 +36,8 @@ def environment(config):
         "llm_api_key", "llm_model", "voice_id", "callback_key",
     )
     return {
-        "MANJI_LANGGRAPH_RTC_ENABLED": "true",
-        **{f"MANJI_LANGGRAPH_RTC_{name.upper()}": str(getattr(config, name)) for name in names},
+        "RTC_ENABLED": "true",
+        **{f"RTC_{name.upper()}": str(getattr(config, name)) for name in names},
     }
 
 
@@ -73,7 +73,7 @@ def test_default_environment_sends_patient_semantic_detection_through_sdk(enviro
 
 
 def test_environment_can_restore_automatic_detection_without_semantic_options(environment):
-    environment["MANJI_LANGGRAPH_RTC_SEMANTIC_TURN_DETECTION"] = "false"
+    environment["RTC_SEMANTIC_TURN_DETECTION"] = "false"
     provider = load_rtc_provider(environment)
     assert provider is not None
     assert provider.config.semantic_turn_detection is False
@@ -85,8 +85,8 @@ def test_environment_can_restore_automatic_detection_without_semantic_options(en
 @pytest.mark.parametrize("eagerness", ["low", "medium", "high", "auto"])
 def test_environment_passes_supported_semantic_eagerness_to_sdk(environment, eagerness):
     environment.update({
-        "MANJI_LANGGRAPH_RTC_SEMANTIC_TURN_DETECTION": "true",
-        "MANJI_LANGGRAPH_RTC_SEMANTIC_EAGERNESS": eagerness,
+        "RTC_SEMANTIC_TURN_DETECTION": "true",
+        "RTC_SEMANTIC_EAGERNESS": eagerness,
     })
     provider = load_rtc_provider(environment)
     assert provider is not None
@@ -116,7 +116,7 @@ def test_direct_config_rejects_wrong_types_and_unsupported_values(config, name, 
 def test_invalid_semantic_environment_disables_provider_without_logging_values(
     environment, suffix, value, caplog,
 ):
-    environment[f"MANJI_LANGGRAPH_RTC_{suffix}"] = value
+    environment[f"RTC_{suffix}"] = value
     assert load_rtc_provider(environment) is None
-    assert "请检查 MANJI_LANGGRAPH_RTC_* 配置" in caplog.text
+    assert "请检查 RTC_* 配置" in caplog.text
     assert value not in caplog.text

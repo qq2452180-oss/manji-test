@@ -325,7 +325,7 @@ def test_app_starts_without_rtc_and_auth_uses_current_identity_contract(monkeypa
     monkeypatch.setattr("src.api.app.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.setattr("src.api.app.AuthRepository", lambda _database_url: repository)
     monkeypatch.setattr("src.api.app.load_rtc_provider", lambda: load_rtc_provider({
-        "MANJI_LANGGRAPH_RTC_ENABLED": "true" if enabled else "false",
+        "RTC_ENABLED": "true" if enabled else "false",
     }))
     with TestClient(create_app(database_url="", media_directory=tmp_path)) as client:
         assert client.app.state.rtc is None

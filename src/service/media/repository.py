@@ -10,7 +10,7 @@ class MediaRepository:
 
     def _connect(self):
         if not self._database_url:
-            raise psycopg.OperationalError("MANJILU_DATABASE_URL is not configured")
+            raise psycopg.OperationalError("DATABASE_URL is not configured")
         return psycopg.connect(self._database_url, row_factory=dict_row, connect_timeout=5)
 
     def create(self, user_id: int, session_id: str, file_path: str) -> int:

@@ -15,7 +15,14 @@ _HASHER = PasswordHasher(
     time_cost=2, memory_cost=19456, parallelism=1,
     hash_len=32, salt_len=16, type=Type.ID,
 )
-_DUMMY_HASH = _HASHER.hash(secrets.token_urlsafe(32))
+
+
+def generate_unusable_password_hash() -> str:
+    """为无密码登录的账号生成独立哈希，随机原文随即丢弃。"""
+    return _HASHER.hash(secrets.token_urlsafe(32))
+
+
+_DUMMY_HASH = generate_unusable_password_hash()
 
 
 class AuthError(ValueError):
@@ -47,6 +54,11 @@ def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("ascii")).hexdigest()
 
 
+def issue_login_token() -> tuple[str, str]:
+    token = secrets.token_urlsafe(32)
+    return token, _token_hash(token)
+
+
 class AuthService:
     def __init__(self, repository: AuthRepository) -> None:
         self._repository = repository
@@ -72,11 +84,11 @@ class AuthService:
 
     def start_guest(self) -> dict:
         """一次事务创建游客与随机凭据；占位账号不能通过密码登录规则。"""
-        token = secrets.token_urlsafe(32)
+        token, token_hash = issue_login_token()
         try:
             user = self._repository.create_guest(
                 "guest:" + secrets.token_hex(16),
-                _HASHER.hash(secrets.token_urlsafe(32)), _token_hash(token),
+                generate_unusable_password_hash(), token_hash,
             )
             return {"token": token, "user": user}
         except psycopg.Error:
@@ -88,8 +100,7 @@ class AuthService:
             user = self._repository.find_by_username(username)
             if not _verify_password(user["password"] if user else None, password):
                 raise AuthError("账号或密码不正确", 401)
-            token = secrets.token_urlsafe(32)
-            token_hash = hashlib.sha256(token.encode("ascii")).hexdigest()
+            token, token_hash = issue_login_token()
             user = self._repository.update_token(user["id"], token_hash)
             if user is None:
                 raise AuthError("账号或密码不正确", 401)

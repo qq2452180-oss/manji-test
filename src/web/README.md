@@ -30,11 +30,63 @@ Python 环境需安装项目依赖，后端读取 `src/.env`。打开 `http://12
 
 `npm run build:html` 继续生成独立静态演示版 `dist-html/`，其演示素材与默认真实数据入口分开。
 
+## 手机号登录配置
+
+后端的模型、数据库、实时语音和短信配置统一填写在项目的 `src/.env`。文件只保存在本机。首次检出项目时可在其中添加以下短信字段，填写后重启后端。
+
+```dotenv
+# 具有短信发送权限的腾讯云 API 凭据
+SMS_SECRET_ID=
+SMS_SECRET_KEY=
+# 短信应用 SDK AppID、已审核的签名文字和验证码模板 ID
+SMS_SDK_APP_ID=
+SMS_SIGN_NAME=
+SMS_TEMPLATE_ID=
+# 可选地域，默认广州
+SMS_REGION=ap-guangzhou
+```
+
+模板正文使用两个变量：`{1}` 接收六位验证码，`{2}` 接收有效分钟数（当前为 5）。`SMS_SIGN_NAME` 必须与腾讯云审核通过的国内短信签名完全一致，不带方括号。服务器部署时将这些字段填入服务器已有的后端运行环境。
+
 ## 当前 RTC 后端与本地回调
 
 通话业务集中在 `src/service/rtc/direct.py`，腾讯 SDK、入房签名和回调鉴权集中在 `src/common/tencent_rtc/client.py`。`src/api/rtc/` 负责配置与 HTTP 接口。通话状态只在单进程内存中保存，语音文字交给现有访谈服务，使用同一份对话历史；接通时通过腾讯 `WelcomeMessage` 播放最后一条模型回复，新访谈播放首问，重拨播放最新回复，不重复生成或保存消息。后端使用单实例、单 worker，重启后重新拨打。
 
-配置项见 `src/.env.rtc.example`。本地联调时按上面的命令明确启动后端在 **8003**，网页打开 `http://127.0.0.1:8003/web/index.html`；回调也必须转到同一实例。
+实时语音配置也填写在 `src/.env`。本地联调时按上面的命令启动后端在 **8003**，网页打开 `http://127.0.0.1:8003/web/index.html`，回调也必须转到同一实例。
+
+<details>
+<summary>实时语音配置项与默认值</summary>
+
+```dotenv
+RTC_ENABLED=false
+RTC_SDK_APP_ID=
+RTC_SECRET_ID=
+RTC_SECRET_KEY=
+RTC_SDK_SECRET_KEY=
+# 与 TRTC 控制台的高级权限控制设置一致
+RTC_ROOM_AUTH_ENABLED=false
+# 公网桥接路由、桥接鉴权令牌和协议模型名称
+RTC_LLM_API_URL=
+RTC_LLM_API_KEY=
+RTC_LLM_MODEL=
+RTC_VOICE_ID=
+# 与控制台的事件回调验签密钥一致，1 至 32 位英文字母或数字
+RTC_CALLBACK_KEY=
+
+# 可选项
+RTC_REGION=ap-guangzhou
+RTC_TTS_MODEL=flow_02_turbo
+RTC_LANGUAGE=zh
+RTC_SPEED=1.0
+RTC_USER_SIG_TTL_SECONDS=3600
+RTC_LLM_TIMEOUT_SECONDS=35
+RTC_REQUEST_TIMEOUT_SECONDS=10
+RTC_MAX_IDLE_SECONDS=60
+RTC_SEMANTIC_TURN_DETECTION=true
+RTC_SEMANTIC_EAGERNESS=low
+```
+
+</details>
 
 若使用 PyCharm 直接运行 `src/main.py`（当前端口 **8004**），网页也使用 8004，并在启动下方回调代理时加上 `MANJI_RTC_BACKEND_PORT=8004`，让通话创建和模型回调进入同一个后端进程。
 
@@ -50,7 +102,7 @@ cloudflared tunnel --url http://127.0.0.1:18084
 - `/api/rtc/llm/chat/completions`：收到识别文字后生成本轮回答，使用专用 Bearer 凭据鉴权。
 - `/api/rtc/events`：验证腾讯事件签名并确认收妥。
 
-将 `src/.env` 的 `MANJI_LANGGRAPH_RTC_LLM_API_URL` 设为隧道 HTTPS 域名加 `/api/rtc/llm/chat/completions`，重启后端后新通话会将它传给腾讯。在腾讯控制台，将 AI 实时对话事件回调地址设为同一域名加 `/api/rtc/events`，密钥与 `MANJI_LANGGRAPH_RTC_CALLBACK_KEY` 一致。临时域名失效或变化时，两处地址都需要更新。
+将 `src/.env` 的 `RTC_LLM_API_URL` 设为隧道 HTTPS 域名加 `/api/rtc/llm/chat/completions`，重启后端后新通话会将它传给腾讯。在腾讯控制台，将 AI 实时对话事件回调地址设为同一域名加 `/api/rtc/events`，密钥与 `RTC_CALLBACK_KEY` 一致。临时域名失效或变化时，两处地址都需要更新。
 
 公网隧道只连接回调代理的 18084 端口。代理保持原始签名正文，正文上限为 256 KiB，不跟随上游重定向。无鉴权 POST 应返回 401；网页、登录及其他 API 路径应返回 404。
 

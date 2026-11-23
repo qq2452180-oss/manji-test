@@ -64,6 +64,15 @@ export async function startGuest() {
 
 export function getGuestTrial() { return request(`${API_PREFIX}/interview/trial`); }
 
+function memberSession(result) {
+  const user = normalizeUser(result?.user);
+  if (!user?.id || (user.is_guest !== undefined && user.is_guest !== false) ||
+      typeof result.token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(result.token)) {
+    throw new ApiError("账号暂时没有准备好，请再试一次。", { code: "AUTH_RESPONSE_INVALID" });
+  }
+  return { ...result, user: { ...user, is_guest: false } };
+}
+
 async function accountAuthentication(action, username, password, { preserveGuest = false } = {}) {
   const originalToken = getAuthToken();
   let result = await request(`${API_PREFIX}/auth/${action}`, {
@@ -83,11 +92,7 @@ async function accountAuthentication(action, username, password, { preserveGuest
     }
     result = { token: originalToken, user: result };
   }
-  const user = normalizeUser(result?.user);
-  if (!user?.id || (user.is_guest !== undefined && user.is_guest !== false) || !/^[A-Za-z0-9_-]{43}$/.test(result.token || "")) {
-    throw new ApiError("账号暂时没有准备好，请再试一次。", { code: "AUTH_RESPONSE_INVALID" });
-  }
-  result = { ...result, user: { ...user, is_guest: false } };
+  result = memberSession(result);
   if (action === "register" && originalToken && result.token === originalToken) {
     // Preserve both drafts and their token-based owner after upgrading in place.
     window.sessionStorage.removeItem(PREVIOUS_GUEST_KEY);
@@ -111,6 +116,30 @@ async function accountAuthentication(action, username, password, { preserveGuest
 
 export function registerAccount(username, password) { return accountAuthentication("register", username, password); }
 export function loginAccount(username, password, options) { return accountAuthentication("login", username, password, options); }
+
+function requestSms(action, body) {
+  return request(`${API_PREFIX}/auth/sms/${action}`, {
+    method: "POST", body, authToken: "", preserveAuthOnUnauthorized: true,
+  });
+}
+
+export async function sendSmsCode(phone) {
+  const result = await requestSms("send", { phone: phone.trim() });
+  if (!Number.isSafeInteger(result?.expires_in) || result.expires_in <= 0 ||
+      !Number.isSafeInteger(result?.retry_after) || result.retry_after <= 0) {
+    throw new ApiError("暂时无法确认验证码发送结果，请稍后重试。", { code: "SMS_RESPONSE_INVALID" });
+  }
+  return { expires_in: result.expires_in, retry_after: result.retry_after };
+}
+
+export async function loginWithSms(phone, code) {
+  const owner = getAuthToken();
+  const result = await requestSms("login", { phone: phone.trim(), code });
+  if (owner !== getAuthToken()) throw new ApiError("登录状态已变化，请重新登录。", { code: "AUTH_CONTEXT_CHANGED" });
+  const session = memberSession(result);
+  setAuthToken(session.token);
+  return session;
+}
 
 function previousGuestToken() {
   try { return window.sessionStorage.getItem(PREVIOUS_GUEST_KEY) || ""; }

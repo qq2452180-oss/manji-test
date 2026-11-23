@@ -11,8 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from ..common.tencent_rtc import TencentRtcProvider
+from ..common.tencent_sms import TencentSmsSender
 from ..langgraph.graph import build_graph
 from ..service.auth import AuthRepository, AuthService
+from ..service.auth.sms import SmsAuthService
 from ..service.catalog import CatalogError, CatalogRepository, CatalogService
 from ..service.home import HomeError, HomeService
 from ..service.home.progress import TopicProgressRepository
@@ -45,9 +47,11 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         load_dotenv(SRC_DIR / ".env")
-        dsn = database_url if database_url is not None else os.getenv("MANJILU_DATABASE_URL", "")
+        dsn = database_url if database_url is not None else os.getenv("DATABASE_URL", "")
         app.state.readiness = ReadinessCheck(dsn, SRC_DIR / "web" / "dist")
-        app.state.auth = AuthService(AuthRepository(dsn))
+        accounts = AuthRepository(dsn)
+        app.state.auth = AuthService(accounts)
+        app.state.sms_auth = SmsAuthService(accounts, TencentSmsSender.from_env())
         app.state.catalog = CatalogService(CatalogRepository(dsn))
         root = media_directory or Path(
             os.getenv("MANJI_LANGGRAPH_MEDIA_DIRECTORY") or PROJECT_ROOT / "data" / "langgraph-media"

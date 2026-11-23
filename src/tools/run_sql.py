@@ -91,9 +91,9 @@ def execute_file(path: Path, *, dry_run: bool = False, database_url: str | None 
         print(f"SQL 文件检查失败：{error}", file=sys.stderr)
         return 1
 
-    database_url = (os.getenv("MANJILU_DATABASE_URL", "") if database_url is None else database_url).strip()
+    database_url = (os.getenv("DATABASE_URL", "") if database_url is None else database_url).strip()
     if not database_url:
-        print("请在 src/.env 或运行环境中配置 MANJILU_DATABASE_URL。", file=sys.stderr)
+        print("请在 src/.env 或运行环境中配置 DATABASE_URL。", file=sys.stderr)
         return 1
 
     try:
@@ -137,14 +137,14 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv(SRC_DIR / ".env", override=False)
     connection_options = {}
     if args.database is not None:
-        database_url = os.getenv("MANJILU_DATABASE_URL", "").strip()
+        database_url = os.getenv("DATABASE_URL", "").strip()
         if not database_url or not args.database.strip():
-            print("请配置 MANJILU_DATABASE_URL，并指定非空数据库名。", file=sys.stderr)
+            print("请配置 DATABASE_URL，并指定非空数据库名。", file=sys.stderr)
             return 1
         try:
             connection_options["database_url"] = make_conninfo(database_url, dbname=args.database.strip())
         except psycopg.ProgrammingError:
-            print("MANJILU_DATABASE_URL 格式无效，请检查连接配置。", file=sys.stderr)
+            print("DATABASE_URL 格式无效，请检查连接配置。", file=sys.stderr)
             return 1
     if args.command != "execute":
         return migrate.main([args.command], **connection_options)

@@ -20,8 +20,9 @@ class AuthRoute(APIRoute):
             try:
                 response = await handler(request)
             except RequestValidationError:
-                # 默认校验详情可能含原始密码，登录接口只返回简短说明。
-                response = JSONResponse({"detail": "账号或密码格式无效"}, status_code=422)
+                # 默认校验详情可能含原始密码、手机号或验证码。
+                detail = "手机号或验证码格式无效" if self.path.startswith("/api/auth/sms/") else "账号或密码格式无效"
+                response = JSONResponse({"detail": detail}, status_code=422)
             except AuthError as exc:
                 response = JSONResponse({"detail": str(exc)}, status_code=exc.status_code)
                 if exc.status_code == 401:
@@ -32,12 +33,25 @@ class AuthRoute(APIRoute):
         return handle
 
 
-router = APIRouter(prefix="/api/auth", tags=["账号密码"], route_class=AuthRoute)
+router = APIRouter(prefix="/api/auth", tags=["账号登录"], route_class=AuthRoute)
 
 
 class Credentials(BaseModel):
     username: str
     password: SecretStr
+
+
+class SmsCodeRequest(BaseModel):
+    phone: str
+
+
+class SmsLoginRequest(SmsCodeRequest):
+    code: SecretStr
+
+
+class SmsCodeResponse(BaseModel):
+    expires_in: int
+    retry_after: int
 
 
 class UserResponse(BaseModel):
@@ -75,6 +89,18 @@ def start_guest(request: Request):
 @router.post("/login", response_model=LoginResponse)
 def login(body: Credentials, request: Request):
     return request.app.state.auth.login(body.username, body.password.get_secret_value())
+
+
+@router.post("/sms/send", response_model=SmsCodeResponse, summary="发送手机登录验证码")
+def send_sms_code(body: SmsCodeRequest, request: Request):
+    # 使用 ASGI 服务器解析后的对端地址，验证码接口不自行解释转发头。
+    client_ip = request.client.host if request.client else "unknown"
+    return request.app.state.sms_auth.send_code(body.phone, client_ip)
+
+
+@router.post("/sms/login", response_model=LoginResponse, summary="验证码登录，首次验证成功创建手机账号")
+def sms_login(body: SmsLoginRequest, request: Request):
+    return request.app.state.sms_auth.login(body.phone, body.code.get_secret_value())
 
 
 @router.get("/me")

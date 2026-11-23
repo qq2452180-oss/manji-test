@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAuthToken, hasPreviousGuest, loginAccount, registerAccount, restoreGuest, setAuthToken } from '../src/lib/api.js';
+import { getAuthToken, hasPreviousGuest, loginAccount, loginWithSms, registerAccount, restoreGuest, sendSmsCode, setAuthToken } from '../src/lib/api.js';
 
 const guestToken = 'g'.repeat(43), memberToken = 'm'.repeat(43), otherToken = 'o'.repeat(43);
 const member = { token: memberToken, expires_at: '2026-11-01T00:00:00Z', user: { id: 'member-a', is_guest: false } };
@@ -139,6 +139,66 @@ describe('account credentials', () => {
     setAuthToken(guestToken); fetch.mockResolvedValue(response({ ...member, user: { id: 12, is_guest: true } }));
     await expect(loginAccount('xiao_li', 'password')).rejects.toMatchObject({ code: 'AUTH_RESPONSE_INVALID' });
     expect(getAuthToken()).toBe(guestToken);
+  });
+});
+
+describe('SMS login', () => {
+  const phone = '13900000001';
+
+  it('sends without a Bearer and uses the retry and expiry times returned by the server', async () => {
+    setAuthToken(guestToken);
+    sessionStorage.setItem('manji.connected.draft.17', 'guest draft');
+    fetch.mockResolvedValue(response({ expires_in: 180, retry_after: 45 }));
+    await expect(sendSmsCode(phone)).resolves.toEqual({ expires_in: 180, retry_after: 45 });
+    const [url, options] = fetch.mock.calls[0];
+    expect(url).toBe('/api/auth/sms/send');
+    expect(options.method).toBe('POST');
+    expect(options.headers.Authorization).toBeUndefined();
+    expect(JSON.parse(options.body)).toEqual({ phone });
+    expect(getAuthToken()).toBe(guestToken);
+    expect(sessionStorage.getItem('manji.connected.draft.17')).toBe('guest draft');
+  });
+
+  it.each([{ retry_after: 60 }, { expires_in: 300, retry_after: 0 }])('rejects invalid send timings', async result => {
+    fetch.mockResolvedValue(response(result));
+    await expect(sendSmsCode(phone)).rejects.toMatchObject({ code: 'SMS_RESPONSE_INVALID' });
+  });
+
+  it('preserves leading zeros and starts the member session without carrying over guest drafts', async () => {
+    setAuthToken(guestToken);
+    sessionStorage.setItem('manji.connected.draft.17', 'guest draft');
+    fetch.mockResolvedValue(response({ token: memberToken, user: { id: 12, username: 'sms:owner' } }));
+    await expect(loginWithSms(phone, '000042')).resolves.toMatchObject({ token: memberToken, user: { id: 12, is_guest: false } });
+    const [url, options] = fetch.mock.calls[0];
+    expect(url).toBe('/api/auth/sms/login');
+    expect(options.method).toBe('POST');
+    expect(options.headers.Authorization).toBeUndefined();
+    expect(JSON.parse(options.body)).toEqual({ phone, code: '000042' });
+    expect(getAuthToken()).toBe(memberToken);
+    expect(hasPreviousGuest()).toBe(false);
+    expect(sessionStorage.getItem('manji.connected.draft.17')).toBeNull();
+    expect(Object.values(sessionStorage)).not.toContain('000042');
+  });
+
+  it.each([
+    [400, { detail: '验证码错误或已失效' }, 'HTTP_400'],
+    [401, { detail: '请重试' }, 'HTTP_401'],
+    [200, { token: 'malformed', user: { id: 12 } }, 'AUTH_RESPONSE_INVALID'],
+  ])('keeps the current identity when login fails (%s)', async (status, payload, code) => {
+    setAuthToken(guestToken);
+    fetch.mockResolvedValue(response(payload, status));
+    await expect(loginWithSms(phone, '000042')).rejects.toMatchObject({ code });
+    expect(getAuthToken()).toBe(guestToken);
+  });
+
+  it('discards a successful login response after an identity change', async () => {
+    const pending = deferred();
+    fetch.mockReturnValue(pending.promise);
+    const login = loginWithSms(phone, '000042');
+    setAuthToken(otherToken);
+    pending.resolve(response(member));
+    await expect(login).rejects.toMatchObject({ code: 'AUTH_CONTEXT_CHANGED' });
+    expect(getAuthToken()).toBe(otherToken);
   });
 });
 

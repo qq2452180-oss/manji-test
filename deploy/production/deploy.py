@@ -4,6 +4,7 @@
 from contextlib import contextmanager
 from copy import deepcopy
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,8 @@ import tempfile
 import time
 from urllib.error import URLError
 from urllib.request import urlopen
+
+from image_archive import digest_file, inspect_archive
 
 
 CFG = Path('/root/manji-src/deploy/src')
@@ -34,6 +37,10 @@ HTTP_TIMEOUT = 120
 COMMAND_TIMEOUT = 180
 IMAGE_PATTERN = re.compile(re.escape(REPOSITORY) + r'@sha256:[0-9a-f]{64}\Z')
 REVISION_PATTERN = re.compile(r'[0-9a-f]{40}\Z')
+HASH_PATTERN = re.compile(r'[0-9a-f]{64}\Z')
+LOCAL_IMAGE_PATTERN = re.compile(r'manji-local:[0-9a-f]{40}-[0-9a-f]{12}\Z')
+PACKAGES = CFG / 'releases'
+MAX_PACKAGE_SIZE = 2 * 1024 ** 3
 IMAGE_SETTING = re.compile(rb'(?m)^([ \t]*MANJI_APP_IMAGE[ \t]*=[ \t]*)([^\r\n]*)(\r?)$')
 
 
@@ -379,11 +386,70 @@ def switch(target, before, previous_state):
         raise DeploymentError('Deployment failed; the previous application was restored') from None
 
 
-def deploy(reference, revision):
+def receive_package(checksum, size):
+    """The restricted SSH key can upload bytes, but cannot run a shell or SCP."""
+    PACKAGES.mkdir(mode=0o700, exist_ok=True)
+    destination = PACKAGES / (checksum + '.tar.gz')
+    descriptor, temporary = tempfile.mkstemp(prefix='.upload-', dir=PACKAGES)
+    digest = hashlib.sha256()
+    try:
+        def expired(*_):
+            raise DeploymentError('Upload timed out; retry the upload')
+
+        old_handler = signal.signal(signal.SIGALRM, expired)
+        signal.alarm(1200)
+        try:
+            with os.fdopen(descriptor, 'wb') as output:
+                remaining = size
+                while remaining:
+                    block = sys.stdin.buffer.read(min(1024 * 1024, remaining))
+                    if not block:
+                        raise DeploymentError('Upload interrupted; incomplete package discarded')
+                    digest.update(block)
+                    output.write(block)
+                    remaining -= len(block)
+                if sys.stdin.buffer.read(1) or digest.hexdigest() != checksum:
+                    raise DeploymentError('Upload size or checksum mismatch')
+                output.flush()
+                os.fsync(output.fileno())
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+        os.replace(temporary, destination)
+        emit('uploaded', sha256=checksum, size=size)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def local_image(checksum, reference, revision, expected_id):
+    archive = PACKAGES / (checksum + '.tar.gz')
+    emit('verify_package', sha256=checksum)
+    if not archive.is_file() or digest_file(archive) != checksum:
+        raise DeploymentError('Uploaded package is missing or damaged; upload it again')
+    try:
+        inspect_archive(archive, reference, revision, expected_id)
+    except (ValueError, KeyError, OSError):
+        raise DeploymentError('Image archive validation failed') from None
+    # A unique release tag must never overwrite an image retained for rollback.
+    existing = docker('image', 'ls', '--no-trunc', '--quiet', reference).strip()
+    if existing and inspect(reference, image=True)['Id'] != expected_id:
+        raise DeploymentError('Release tag already points to a different image')
+    emit('load', image=reference)
+    docker('load', '--input', str(archive), timeout=600)
+    info = inspect(reference, image=True)
+    validate_image(info, revision)
+    if info['Id'] != expected_id:
+        raise DeploymentError('Loaded image ID differs from the verified archive')
+    return info
+
+
+def deploy(reference, revision, *, package=None, expected_id=None):
     before, state = snapshot(), load_state()
     if state is not None:
         check_record(state['current'], before)
-    info = pull_image(reference, revision)
+    info = (local_image(package, reference, revision, expected_id) if package is not None
+            else pull_image(reference, revision))
     target = record(reference, info)
     if target == before['record']:
         emit('unchanged', image=reference, revision=revision)
@@ -444,10 +510,21 @@ def parse_command(arguments):
             raise DeploymentError('Unsupported deployment command') from None
     if arguments in (['rollback'], ['status']):
         return arguments
+    if (len(arguments) == 3 and arguments[0] == 'upload'
+            and HASH_PATTERN.fullmatch(arguments[1]) and arguments[2].isdigit()
+            and 0 < int(arguments[2]) <= MAX_PACKAGE_SIZE):
+        return arguments
+    if (len(arguments) == 5 and arguments[0] == 'deploy-local'
+            and HASH_PATTERN.fullmatch(arguments[1])
+            and LOCAL_IMAGE_PATTERN.fullmatch(arguments[2])
+            and REVISION_PATTERN.fullmatch(arguments[3])
+            and arguments[2].startswith('manji-local:' + arguments[3] + '-')
+            and re.fullmatch(r'sha256:[0-9a-f]{64}', arguments[4])):
+        return arguments
     if (len(arguments) == 3 and arguments[0] == 'deploy'
             and IMAGE_PATTERN.fullmatch(arguments[1]) and REVISION_PATTERN.fullmatch(arguments[2])):
         return arguments
-    raise DeploymentError('Allowed commands: deploy <repository@sha256:digest> <revision>, rollback, status')
+    raise DeploymentError('Allowed commands: upload, deploy-local, deploy, rollback, status (with validated arguments)')
 
 
 def main(arguments=None):
@@ -459,6 +536,10 @@ def main(arguments=None):
         with deployment_lock():
             if command[0] == 'deploy':
                 deploy(command[1], command[2])
+            elif command[0] == 'upload':
+                receive_package(command[1], int(command[2]))
+            elif command[0] == 'deploy-local':
+                deploy(command[2], command[3], package=command[1], expected_id=command[4])
             elif command[0] == 'rollback':
                 rollback()
             else:

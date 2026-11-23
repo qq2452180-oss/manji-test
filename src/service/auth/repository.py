@@ -10,7 +10,7 @@ class AuthRepository:
 
     def _connect(self):
         if not self._database_url:
-            raise psycopg.OperationalError("MANJILU_DATABASE_URL is not configured")
+            raise psycopg.OperationalError("DATABASE_URL is not configured")
         return psycopg.connect(self._database_url, row_factory=dict_row, connect_timeout=5)
 
     def create_user(self, username: str, password_hash: str) -> dict:
@@ -67,3 +67,12 @@ class AuthRepository:
             return connection.execute(
                 "SELECT id, is_guest FROM users WHERE token = %s", (token_hash,),
             ).fetchone()
+
+    def login_with_verified_phone(self, phone: str, username: str, password_hash: str, token_hash: str) -> dict:
+        """手机号已完成校验；已有账号更新登录凭证，首次登录创建账号。"""
+        with self._connect() as connection:
+            return connection.execute("""
+                INSERT INTO users (phone_e164, username, password, token) VALUES (%s, %s, %s, %s)
+                ON CONFLICT (phone_e164) DO UPDATE SET token = EXCLUDED.token
+                RETURNING id, username, create_time
+                """, (phone, username, password_hash, token_hash)).fetchone()

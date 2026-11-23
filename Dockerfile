@@ -40,5 +40,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready', timeout=8).read()"]
 
 # Keep this port on the private Compose network behind the trusted gateway.
-# RTC call state requires a single worker.
+# RTC calls and unexpired SMS login codes live in this single worker.
 CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]

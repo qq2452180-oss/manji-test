@@ -11,6 +11,7 @@ import { ensureIdentity } from '../src/lib/workflow-api.js';
 
 vi.mock('../src/lib/api.js', async original => ({
   ...(await original()), getCurrentUser: vi.fn(), loginAccount: vi.fn(), registerAccount: vi.fn(), restoreGuest: vi.fn(),
+  sendSmsCode: vi.fn(), loginWithSms: vi.fn(),
 }));
 vi.mock('../src/lib/workflow-api.js', async original => ({ ...(await original()), ensureIdentity: vi.fn() }));
 vi.mock('../src/lib/navigation.js', () => ({ navigate: vi.fn(), reloadPage: vi.fn() }));
@@ -24,10 +25,128 @@ async function fill(wrapper, { confirmation } = {}) {
   if (confirmation !== undefined) await wrapper.get('#account-confirm').setValue(confirmation);
 }
 
+const phone = '13800138000';
+const sendButton = '[data-testid="send-code"]';
+
+function chooseMode(wrapper, label) {
+  const action = wrapper.findAll('button').find(button => label.test(button.text()));
+  expect(action).toBeDefined();
+  return action.trigger('click');
+}
+
+describe('connected SMS login', () => {
+  it('validates the phone and code before calling either SMS endpoint', async () => {
+    const wrapper = mount(ConnectedLoginPage); await flushPromises();
+    await wrapper.get('#login-phone').setValue('138');
+    await wrapper.get(sendButton).trigger('click');
+    expect(wrapper.get('#login-phone').attributes('aria-invalid')).toBe('true');
+    expect(api.sendSmsCode).not.toHaveBeenCalled();
+    await wrapper.get('#login-phone').setValue(phone);
+    await wrapper.get('#login-code').setValue('12');
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.get('#login-code').attributes('aria-invalid')).toBe('true');
+    expect(api.loginWithSms).not.toHaveBeenCalled();
+  });
+
+  it('uses the returned cooldown and clears the previous code when the phone changes', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    api.sendSmsCode.mockResolvedValue({ retry_after: 17, expires_in: 300 });
+    const wrapper = mount(ConnectedLoginPage);
+    await flushPromises();
+    expect(wrapper.find('#account-username').exists()).toBe(false);
+    expect(wrapper.get('#login-code').attributes('autocomplete')).toBe('one-time-code');
+    await wrapper.get('#login-phone').setValue(phone);
+    await wrapper.get(sendButton).trigger('click'); await flushPromises();
+    expect(api.sendSmsCode).toHaveBeenCalledExactlyOnceWith(phone);
+    expect(wrapper.get(sendButton).text()).toContain('17');
+    expect(wrapper.get(sendButton).element.disabled).toBe(true);
+    await vi.advanceTimersByTimeAsync(17_000); await flushPromises();
+    expect(wrapper.get(sendButton).element.disabled).toBe(false);
+    await wrapper.get('#login-code').setValue('012345');
+    await wrapper.get('#login-phone').setValue('13900139000');
+    expect(wrapper.get('#login-code').element.value).toBe('');
+    expect(api.loginWithSms).not.toHaveBeenCalled();
+  });
+
+  it('allows a failed send to be retried without re-entering the phone', async () => {
+    api.sendSmsCode.mockRejectedValueOnce(new api.ApiError('验证码发送失败，请稍后再试', { status: 503 }))
+      .mockResolvedValueOnce({ retry_after: 60, expires_in: 300 });
+    const wrapper = mount(ConnectedLoginPage);
+    await flushPromises();
+    await wrapper.get('#login-phone').setValue(phone);
+    await wrapper.get(sendButton).trigger('click'); await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('发送失败');
+    expect(wrapper.get('#login-phone').element.value).toBe(phone);
+    expect(wrapper.get(sendButton).element.disabled).toBe(false);
+    await wrapper.get(sendButton).trigger('click'); await flushPromises();
+    expect(wrapper.get(sendButton).text()).toContain('60');
+    expect(api.sendSmsCode).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores the sending result for a phone that has changed', async () => {
+    let accepted;
+    api.sendSmsCode.mockReturnValueOnce(new Promise(resolve => { accepted = resolve; }));
+    const wrapper = mount(ConnectedLoginPage); await flushPromises();
+    await wrapper.get('#login-phone').setValue(phone);
+    await wrapper.get(sendButton).trigger('click');
+    expect(wrapper.get(sendButton).element.disabled).toBe(true);
+    await wrapper.get('#login-phone').setValue('13900139000');
+    accepted({ retry_after: 60, expires_in: 300 }); await flushPromises();
+    expect(wrapper.get(sendButton).element.disabled).toBe(false);
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+  });
+
+  it('keeps the phone after a bad code and returns to the original record on success', async () => {
+    api.loginWithSms.mockRejectedValueOnce(new api.ApiError('验证码错误或已失效，请重新确认', { status: 400 }))
+      .mockResolvedValueOnce({});
+    const wrapper = mount(ConnectedLoginPage);
+    await flushPromises();
+    await wrapper.get('#login-phone').setValue(phone);
+    await wrapper.get('#login-code').setValue('999999');
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('验证码');
+    expect(navigate).not.toHaveBeenCalled();
+    expect(wrapper.get('#login-phone').element.value).toBe(phone);
+    await wrapper.get('#login-code').setValue('012345');
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(api.loginWithSms).toHaveBeenLastCalledWith(phone, '012345');
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('/web/history.html?session_id=12', { replace: true });
+  });
+
+  it('opens the home page when an existing guest chooses the independent phone account', async () => {
+    api.setAuthToken('guest-token');
+    api.getCurrentUser.mockResolvedValue({ id: 7, is_guest: true });
+    api.loginWithSms.mockResolvedValue({});
+    const wrapper = mount(ConnectedLoginPage);
+    await flushPromises();
+    expect(wrapper.find('#account-confirm').exists()).toBe(true);
+    await chooseMode(wrapper, /手机/);
+    expect(wrapper.text()).toContain('保留');
+    expect(wrapper.text()).toContain('故事');
+    await wrapper.get('#login-phone').setValue(phone);
+    await wrapper.get('#login-code').setValue('012345');
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(api.loginWithSms).toHaveBeenCalledExactlyOnceWith(phone, '012345');
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('/web/index.html', { replace: true });
+  });
+
+  it('lets a verified member continue without sending a code', async () => {
+    api.setAuthToken('member-token');
+    api.getCurrentUser.mockResolvedValue({ id: 7, is_guest: false });
+    const wrapper = mount(ConnectedLoginPage); await flushPromises();
+    expect(wrapper.find('form').exists()).toBe(false);
+    const link = wrapper.findAll('a').find(anchor => anchor.text().includes('继续使用'));
+    expect(link.attributes('href')).toBe('/web/history.html?session_id=12');
+    expect(api.sendSmsCode).not.toHaveBeenCalled();
+  });
+});
+
 describe('connected account entry', () => {
   it('logs in through the existing helper and returns to the original saved record', async () => {
     const wrapper = mount(ConnectedLoginPage);
-    await flushPromises(); await fill(wrapper);
+    await flushPromises();
+    await chooseMode(wrapper, /^账号密码登录$/);
+    await fill(wrapper);
     await wrapper.get('form').trigger('submit'); await flushPromises();
     expect(api.loginAccount).toHaveBeenCalledExactlyOnceWith('my_account', 'my-password');
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/web/history.html?session_id=12', { replace: true });
@@ -97,6 +216,7 @@ describe('connected account entry', () => {
   });
 
   it('ignores a late login result after leaving the page', async () => {
+    history.replaceState(null, '', '/web/login.html?mode=login');
     let finish;
     api.loginAccount.mockReturnValue(new Promise(resolve => { finish = resolve; }));
     const wrapper = mount(ConnectedLoginPage);

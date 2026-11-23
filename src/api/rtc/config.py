@@ -9,7 +9,7 @@ from ...common.tencent_rtc import TencentRtcConfig, TencentRtcError, TencentRtcP
 
 
 _LOG = logging.getLogger(__name__)
-_PREFIX = "MANJI_LANGGRAPH_RTC_"
+_PREFIX = "RTC_"
 _REQUIRED = (
     "secret_id", "secret_key", "sdk_secret_key", "llm_api_url", "llm_api_key",
     "llm_model", "voice_id", "callback_key",
@@ -47,7 +47,7 @@ def load_rtc_provider(environ: Mapping[str, str] | None = None) -> TencentRtcPro
     if enabled in {"", "0", "false", "no", "off"}:
         return None
     if enabled not in {"1", "true", "yes", "on"}:
-        _LOG.warning("新工作流 RTC 未启用：MANJI_LANGGRAPH_RTC_ENABLED 格式无效")
+        _LOG.warning("新工作流 RTC 未启用：RTC_ENABLED 格式无效")
         return None
 
     try:
@@ -62,5 +62,5 @@ def load_rtc_provider(environ: Mapping[str, str] | None = None) -> TencentRtcPro
                 values[name] = convert(env[key])
         return TencentRtcProvider(TencentRtcConfig(**values))
     except (TypeError, ValueError, OverflowError, TencentRtcError):
-        _LOG.warning("新工作流 RTC 未启用：请检查 MANJI_LANGGRAPH_RTC_* 配置")
+        _LOG.warning("新工作流 RTC 未启用：请检查 RTC_* 配置")
         return None

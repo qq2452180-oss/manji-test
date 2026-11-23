@@ -1,7 +1,7 @@
 """新库结构初始化：python -m src.common.migrate [init|check]。
 
 schema 目录按模块保存完整建表 SQL，编号只决定依赖顺序。
-仅使用 MANJILU_DATABASE_URL；init 要求空库，check 只读校验。
+仅使用 DATABASE_URL；init 要求空库，check 只读校验。
 migrate 可追加执行尚未安装的编号 SQL；已安装文件必须保持校验和不变。
 """
 
@@ -25,7 +25,7 @@ SCHEMA_DIRECTORY = Path(__file__).with_name("schema")
 MIGRATIONS_DIRECTORY = SCHEMA_DIRECTORY
 LEDGER_TABLE = "src_schema_migrations"
 REQUIRED_COLUMNS = {
-    "users": {"id", "username", "password", "token", "is_guest", "create_time"},
+    "users": {"id", "username", "password", "token", "is_guest", "create_time", "phone_e164"},
     "media": {"id", "user_id", "session_id", "file_path", "create_time"},
     "interview_sessions": {
         "id", "user_id", "resume_mode", "context", "create_time", "update_time", "finish_time",
@@ -245,9 +245,9 @@ def main(argv: list[str] | None = None, *, database_url: str | None = None) -> i
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("init", "migrate", "check"), nargs="?", default="init")
     args = parser.parse_args(argv)
-    database_url = (os.getenv("MANJILU_DATABASE_URL", "") if database_url is None else database_url).strip()
+    database_url = (os.getenv("DATABASE_URL", "") if database_url is None else database_url).strip()
     if not database_url:
-        print("MANJILU_DATABASE_URL is required", file=sys.stderr)
+        print("DATABASE_URL is required", file=sys.stderr)
         return 1
     try:
         with psycopg.connect(database_url, autocommit=True, connect_timeout=10) as connection:
