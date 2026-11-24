@@ -13,12 +13,12 @@ class AuthRepository:
             raise psycopg.OperationalError("DATABASE_URL is not configured")
         return psycopg.connect(self._database_url, row_factory=dict_row, connect_timeout=5)
 
-    def create_user(self, username: str, password_hash: str) -> dict:
+    def create_user(self, username: str, password_hash: str, token_hash: str | None = None) -> dict:
         with self._connect() as connection:
             return connection.execute(
-                "INSERT INTO users (username, password) VALUES (%s, %s) "
+                "INSERT INTO users (username, password, token) VALUES (%s, %s, %s) "
                 "RETURNING id, username, create_time",
-                (username, password_hash),
+                (username, password_hash, token_hash),
             ).fetchone()
 
     def find_by_username(self, username: str) -> dict | None:
@@ -37,14 +37,16 @@ class AuthRepository:
                 (username, password_hash, token_hash),
             ).fetchone()
 
-    def upgrade_guest(self, token_hash: str, username: str, password_hash: str) -> dict | None:
+    def upgrade_guest(
+        self, token_hash: str, username: str, password_hash: str, new_token_hash: str | None = None,
+    ) -> dict | None:
         with self._connect() as connection:
-            # 条件更新锁定同一用户行，并重新核验凭据与游客身份；保留 ID 和当前 token。
+            # 旧 Bearer 客户端保留原凭证，浏览器升级时在同一事务内换发 cookie。
             return connection.execute(
-                "UPDATE users SET username = %s, password = %s, is_guest = FALSE "
+                "UPDATE users SET username = %s, password = %s, is_guest = FALSE, token = COALESCE(%s, token) "
                 "WHERE token = %s AND is_guest "
                 "RETURNING id, username, create_time",
-                (username, password_hash, token_hash),
+                (username, password_hash, new_token_hash, token_hash),
             ).fetchone()
 
     def update_token(self, user_id: int, token_hash: str) -> dict | None:
@@ -56,16 +58,26 @@ class AuthRepository:
             ).fetchone()
 
     def find_user_id_by_token(self, token_hash: str) -> int | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                "SELECT id FROM users WHERE token = %s", (token_hash,),
-            ).fetchone()
+        row = self.find_user_by_token(token_hash)
         return row["id"] if row else None
 
     def find_user_by_token(self, token_hash: str) -> dict | None:
         with self._connect() as connection:
             return connection.execute(
-                "SELECT id, is_guest FROM users WHERE token = %s", (token_hash,),
+                "SELECT id, is_guest FROM users WHERE token = %s "
+                "AND (is_guest OR token_expires_at > statement_timestamp())", (token_hash,),
+            ).fetchone()
+
+    def revoke_token(self, token_hash: str) -> None:
+        with self._connect() as connection:
+            connection.execute("UPDATE users SET token = NULL WHERE token = %s", (token_hash,))
+
+    def exchange_member_token(self, old_hash: str, new_hash: str) -> dict | None:
+        with self._connect() as connection:
+            return connection.execute(
+                "UPDATE users SET token = %s WHERE token = %s AND NOT is_guest "
+                "AND token_expires_at > statement_timestamp() RETURNING id, username, create_time",
+                (new_hash, old_hash),
             ).fetchone()
 
     def login_with_verified_phone(self, phone: str, username: str, password_hash: str, token_hash: str) -> dict:

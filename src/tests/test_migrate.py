@@ -36,6 +36,7 @@ SCHEMA_FILES = (
     "content/0010_biography.sql",
     "interview/0011_rtc_calls.sql",
     "account/0012_sms_login.sql",
+    "account/0013_session_expiry.sql",
 )
 BUSINESS_TABLES = {
     "users", "interview_sessions", "media", "user_profiles", "life_events", "chapter", "story", "topic", "story_revisions", "biography", "rtc_calls",
@@ -79,7 +80,7 @@ def context_message(identifier, *, source=None):
 
 def test_schema_files_are_complete_ordered_and_keep_relative_category_paths():
     schema = load_migrations()
-    assert [item.version for item in schema] == [f"{number:04d}" for number in range(1, 13)]
+    assert [item.version for item in schema] == [f"{number:04d}" for number in range(1, 14)]
     assert tuple(item.filename for item in schema) == SCHEMA_FILES
     assert "CREATE FUNCTION interview_context_ids_valid" in schema[1].sql
     assert "interview_sessions_context_ids_check" in schema[1].sql
@@ -385,7 +386,7 @@ def test_incremental_revision_upgrade_preserves_existing_stories_and_history(dat
                                           (user_id,str(session_id))).fetchone()[0]
         before = connection.execute('SELECT title,body,source_session_id,create_time FROM story WHERE id=%s',(story_id,)).fetchone()
         old_ledger = connection.execute('SELECT * FROM src_schema_migrations ORDER BY version').fetchall()
-        assert apply_migrations(connection) == ['0009', '0010', '0011', '0012']
+        assert apply_migrations(connection) == ['0009', '0010', '0011', '0012', '0013']
         assert connection.execute(
             "SELECT username, password, phone_e164 FROM users WHERE id = %s", (user_id,),
         ).fetchone() == ("upgrade-test", "hash", None)
@@ -417,7 +418,7 @@ def test_biography_upgrade_keeps_supplemented_stories_unchanged(database_url):
             )
         before = connection.execute('SELECT * FROM story WHERE id=%s', (story_id,)).fetchone()
         revision = connection.execute('SELECT * FROM story_revisions WHERE story_id=%s', (story_id,)).fetchone()
-        assert apply_migrations(connection) == ['0010', '0011', '0012']
+        assert apply_migrations(connection) == ['0010', '0011', '0012', '0013']
         assert connection.execute('SELECT * FROM story WHERE id=%s', (story_id,)).fetchone() == before
         assert connection.execute('SELECT * FROM story_revisions WHERE story_id=%s', (story_id,)).fetchone() == revision
         assert connection.execute('SELECT COUNT(*) FROM biography').fetchone() == (0,)
@@ -451,7 +452,7 @@ def test_rtc_metadata_upgrade_preserves_existing_interview_and_story(database_ur
                 "INSERT INTO story (user_id, title, body, chapter_id) VALUES (%s, '旧标题', '旧正文', %s) RETURNING *",
                 (owner, chapter),
             ).fetchone()
-        assert apply_migrations(connection) == ["0011", "0012"]
+        assert apply_migrations(connection) == ["0011", "0012", "0013"]
         assert connection.execute("SELECT * FROM interview_sessions").fetchall() == [session]
         assert connection.execute("SELECT * FROM story").fetchall() == [story]
         assert connection.execute("SELECT COUNT(*) FROM rtc_calls").fetchone() == (0,)
@@ -477,3 +478,32 @@ def test_phone_is_optional_unique_and_preserves_required_password(database_url):
             connection.execute(insert, ("hash", "invalid"))
         with pytest.raises(psycopg.errors.NotNullViolation):
             connection.execute(insert, (None, "+8613800000002"))
+
+
+def test_session_upgrade_grants_one_window_to_existing_members(database_url, schema_directory):
+    (schema_directory / "account/0013_session_expiry.sql").unlink()
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        # Install the previous version with a representative ledger and users.
+        connection.execute("CREATE TABLE src_schema_migrations (version TEXT PRIMARY KEY, filename TEXT NOT NULL, "
+                           "checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        for migration in load_migrations(schema_directory):
+            connection.execute(migration.sql, prepare=False)
+            connection.execute("INSERT INTO src_schema_migrations(version,filename,checksum) VALUES (%s,%s,%s)",
+                               (migration.version, migration.filename, migration.checksum))
+        connection.execute("INSERT INTO users(username,password,token,is_guest) VALUES "
+                           "('member','hash','member-token',false),('guest','hash','guest-token',true),"
+                           "('unused','hash',NULL,false)")
+        assert apply_migrations(connection) == ["0013"]
+        assert connection.execute(
+            "SELECT username, token, token_expires_at IS NULL FROM users ORDER BY id"
+        ).fetchall() == [("member", "member-token", False), ("guest", "guest-token", True), ("unused", None, True)]
+        expires = connection.execute("SELECT token_expires_at FROM users WHERE username='member'").fetchone()
+        assert connection.execute(
+            "SELECT %s BETWEEN statement_timestamp() + interval '720 hours' - interval '5 seconds' "
+            "AND statement_timestamp() + interval '720 hours'", expires,
+        ).fetchone() == (True,)
+        assert apply_migrations(connection) == []
+        assert connection.execute("SELECT token_expires_at FROM users WHERE username='member'").fetchone() == expires
+        # Upgrading a legacy guest with the old application also starts the member period.
+        connection.execute("UPDATE users SET is_guest = false WHERE username = 'guest'")
+        assert connection.execute("SELECT token_expires_at > now() FROM users WHERE token='guest-token'").fetchone() == (True,)

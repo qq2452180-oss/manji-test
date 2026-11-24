@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import * as workflow from '../lib/workflow-api.js';
-import { ApiError, getAuthToken } from '../lib/api.js';
+import { getAuthToken } from '../lib/api.js';
 import { biographyUrl, homeUrl, interviewUrl, loginUrl, storyUrl } from '../lib/workflow-navigation.js';
 import '../styles/prototype-organizing.css';
 
@@ -14,8 +14,8 @@ const returnStoryId = ref(params.getAll('story_id').length === 1 && /^[1-9]\d*$/
 const authChanged = ref(false), authRequired = ref(false), visible = ref(!document.hidden), needsReply = ref(false), legacyReadOnly = ref(false);
 const resultUrl = computed(() => storyId.value ? storyUrl(storyId.value, { sessionId }) : '');
 const backUrl = computed(() => returnStoryId.value ? storyUrl(returnStoryId.value) : homeUrl(topic.value?.chapter_id));
-let alive = true, generation = 0, identityPending = false, finishPending = false, owner = getAuthToken();
-const current = version => alive && visible.value && generation === version && !authChanged.value;
+let alive = true, generation = 0, finishPending = false, owner = getAuthToken();
+const current = version => alive && visible.value && generation === version && !authChanged.value && (!owner || owner === getAuthToken());
 
 async function run(finish = false, rebase = false) {
   if (!alive || !visible.value || busy.value || authChanged.value) return;
@@ -23,10 +23,8 @@ async function run(finish = false, rebase = false) {
   busy.value = true; error.value = ''; authRequired.value = false; needsReply.value = false; legacyReadOnly.value = false; phase.value = 'loading';
   const version = generation;
   try {
-    if (!getAuthToken()) throw new ApiError('请先登录原来的账号，再重新打开这段讲述。', { status: 401, code: 'AUTH_REQUIRED' });
-    identityPending = !getAuthToken();
-    try { await workflow.ensureIdentity(); owner = getAuthToken(); }
-    finally { identityPending = false; }
+    await workflow.ensureIdentity();
+    owner ||= getAuthToken();
     if (!current(version)) return;
     const session = await workflow.getInterview(sessionId);
     if (!current(version)) return;
@@ -71,7 +69,6 @@ async function run(finish = false, rebase = false) {
   }
 }
 function changedIdentity() {
-  if (identityPending && !owner && !topic.value && !storyId.value) return;
   generation++; authChanged.value = true; authRequired.value = false; topic.value = null; storyId.value = ''; returnStoryId.value = ''; legacyReadOnly.value = false;
   phase.value = 'error'; error.value = '登录状态已变化，请返回首页重新打开。';
 }

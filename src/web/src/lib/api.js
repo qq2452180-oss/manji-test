@@ -1,45 +1,50 @@
 /* 统一封装慢记页面对 FastAPI 的同源请求、超时处理和错误解析。 */
+import {
+  AUTH_TOKEN_KEY, PREVIOUS_GUEST_KEY, cookieOwner, getAuthToken, isCookieOwner, legacyUser,
+  rememberLegacyUser, sessionHeaders, setAuthToken, setCookieSession, usesCookieSession, validSessionId,
+} from "./browser-session.js";
+
+export { getAuthToken, sessionHeaders, setAuthToken };
 
 const API_PREFIX = "/api";
 const DEFAULT_TIMEOUT_MS = 65000;
 const VOICE_TURN_TIMEOUT_MS = 135000;
 const SPEECH_SYNTHESIS_TIMEOUT_MS = 90000;
+let authVersion = 0;
+let memberProbe = null;
+let pendingMutation = Promise.resolve();
+window.addEventListener?.("manji:auth-changed", () => { authVersion += 1; });
 
-const AUTH_TOKEN_KEY = "manji.auth_token";
-const PREVIOUS_GUEST_KEY = "manji.previous_guest_token";
-const WELCOME_SEEN_KEY = "manji.web2.welcome.seen.v1";
-const VOICE_GUIDE_KEY = "manji.web2.voice-guide.completed.v1";
-
-export function getAuthToken() {
-  try { return window.sessionStorage.getItem(AUTH_TOKEN_KEY) || ""; }
-  catch (_error) { return ""; }
+function changedContext() {
+  return new ApiError("登录状态已变化，请重新打开当前页面。", { code: "AUTH_CONTEXT_CHANGED" });
 }
 
-export function setAuthToken(token) {
-  // Business drafts are also per-tab. Switching accounts must discard old IDs.
-  const storage = window.sessionStorage;
-  for (let index = storage.length - 1; index >= 0; index -= 1) {
-    const key = storage.key(index);
-    // This public presentation preference survives logout, including when
-    // localStorage is blocked. Credentials and all business state still reset.
-    if (key?.startsWith("manji.") && ![WELCOME_SEEN_KEY, VOICE_GUIDE_KEY].includes(key)) storage.removeItem(key);
-  }
-  if (token) storage.setItem(AUTH_TOKEN_KEY, token);
-  // A live call must release the microphone before login redirects the page.
-  if (typeof window.dispatchEvent === "function") window.dispatchEvent(new Event("manji:auth-changed"));
+function withSessionMutation(owner, version, action) {
+  const run = () => {
+    if (version !== authVersion || owner !== getAuthToken()) throw changedContext();
+    return action();
+  };
+  // Keep Set-Cookie responses ordered across tabs, including the confirming /me.
+  if (navigator.locks?.request) return navigator.locks.request("manji.browser.session", run);
+  const result = pendingMutation.then(run);
+  pendingMutation = result.catch(() => {});
+  return result;
 }
 
-function authorizedHeaders(headers, token = getAuthToken()) {
-  return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
+export function handleSessionFailure(status, code, owner = getAuthToken()) {
+  if (owner !== getAuthToken() || !owner || (status !== 401 && !(status === 409 && code === "AUTH_CONTEXT_CHANGED"))) return;
+  if (usesCookieSession()) setCookieSession("");
+  else { try { setAuthToken(""); } catch { /* Tab storage may be disabled. */ } }
 }
 
-function handleAuthenticationFailure(status, redirect = true) {
-  if (status !== 401) return;
-  try { setAuthToken(""); } catch (_error) { /* Storage may be disabled. */ }
-  if (redirect && !window.location.pathname?.endsWith("/web2/login.html")) {
-    const next = window.location.pathname?.startsWith("/web2/")
-      ? window.location.pathname + window.location.search : "/web2/index.html";
-    window.location.replace(`/web2/login.html?next=${encodeURIComponent(next)}`);
+function handleAuthenticationFailure(status, code, owner, redirect) {
+  handleSessionFailure(status, code, owner);
+  if (redirect && status === 401) {
+    const prefix = usesCookieSession() ? "/web/" : "/web2/";
+    if (window.location.pathname?.endsWith(prefix + "login.html")) return;
+    const next = window.location.pathname?.startsWith(prefix)
+      ? window.location.pathname + window.location.search : prefix + "index.html";
+    window.location.replace(prefix + "login.html?next=" + encodeURIComponent(next));
   }
 }
 
@@ -48,7 +53,58 @@ function normalizeUser(user) {
 }
 
 export async function getCurrentUser({ redirectOnUnauthorized = true, preserveAuthOnUnauthorized = false } = {}) {
-  return normalizeUser(await request(`${API_PREFIX}/auth/me`, { redirectOnUnauthorized, preserveAuthOnUnauthorized }));
+  const path = `${API_PREFIX}/auth/me`;
+  const options = { redirectOnUnauthorized, preserveAuthOnUnauthorized };
+  if (!usesCookieSession()) return normalizeUser(await request(path, options));
+  // Login and protected pages may both probe the same old tab during startup.
+  // Only one request may rotate that tab's legacy credential.
+  const owner = getAuthToken(), version = authVersion;
+  if (memberProbe?.owner === owner && memberProbe.version === version
+    && memberProbe.options.redirectOnUnauthorized === redirectOnUnauthorized
+    && memberProbe.options.preserveAuthOnUnauthorized === preserveAuthOnUnauthorized) return memberProbe.promise;
+  const probe = { owner, version, options };
+  probe.promise = discoverBrowserUser(path, options).finally(() => { if (memberProbe === probe) memberProbe = null; });
+  memberProbe = probe;
+  return probe.promise;
+}
+
+async function discoverBrowserUser(path, { redirectOnUnauthorized, preserveAuthOnUnauthorized }) {
+  const owner = getAuthToken();
+  const version = authVersion;
+  let credential = owner;
+  let result;
+  try {
+    try { result = await request(path, { preserveAuthOnUnauthorized: true }); }
+    catch (error) {
+      if (error.status !== 409 || error.code !== "AUTH_CONTEXT_CHANGED" || owner !== getAuthToken()) throw error;
+      // Only this read-only discovery request may retry without the old session id.
+      credential = "";
+      result = await request(path, { authToken: "", preserveAuthOnUnauthorized: true });
+    }
+  } catch (error) {
+    if (!preserveAuthOnUnauthorized && error.status === 401 && owner === getAuthToken()) {
+      handleAuthenticationFailure(error.status, error.code, owner, redirectOnUnauthorized);
+    }
+    throw error;
+  }
+  if (version !== authVersion || owner !== getAuthToken()) throw changedContext();
+  const user = normalizeUser(result);
+  if (!user?.id || typeof user.is_guest !== "boolean") throw invalidSession();
+  if (!credential || isCookieOwner(credential)) {
+    if (!validSessionId(user.session_id)) throw invalidSession();
+    if (cookieOwner(user.session_id) !== owner) {
+      const pending = owner && !isCookieOwner(owner) ? legacyUser() : null;
+      const sameMember = !user.is_guest && pending?.userId === String(user.id);
+      setCookieSession(user.session_id, {
+        notify: Boolean(owner) && !sameMember,
+        draftOwner: sameMember ? owner : "", upgradeFrom: sameMember ? pending.sessionId : "",
+      });
+    }
+  } else if (!user.is_guest && validSessionId(user.session_id)) {
+    rememberLegacyUser(user);
+    return withSessionMutation(owner, version, () => upgradeLegacySession(owner, user, version));
+  }
+  return user;
 }
 
 export async function startGuest() {
@@ -73,7 +129,67 @@ function memberSession(result) {
   return { ...result, user: { ...user, is_guest: false } };
 }
 
+function invalidSession() { return new ApiError("登录信息无法确认，请重新登录。", { code: "AUTH_RESPONSE_INVALID" }); }
+
+async function confirmMemberCookie(result) {
+  const user = normalizeUser(result?.user);
+  if (!user?.id || user.is_guest === true || !validSessionId(result.session_id) || result.token !== undefined) throw invalidSession();
+  let confirmed;
+  try {
+    // Probe the actual cookie even if the browser kept an older cookie or rejected the new one.
+    confirmed = normalizeUser(await request(`${API_PREFIX}/auth/me`, { authToken: "", preserveAuthOnUnauthorized: true }));
+  } catch (error) {
+    if (error.status === 401) {
+      throw new ApiError("浏览器未保存登录状态，请允许本站使用 Cookie 后重新登录。", { code: "COOKIE_SESSION_UNAVAILABLE" });
+    }
+    throw error;
+  }
+  if (confirmed?.session_id !== result.session_id) throw changedContext();
+  if (confirmed.is_guest !== false || String(confirmed.id) !== String(user.id)) throw invalidSession();
+  return confirmed;
+}
+
+async function upgradeLegacySession(owner, user, version) {
+  let confirmed;
+  try {
+    const result = await request(`${API_PREFIX}/auth/session/upgrade`, {
+      method: "POST", authToken: owner, expectedSessionId: user.session_id, preserveAuthOnUnauthorized: true,
+    });
+    confirmed = await confirmMemberCookie(result);
+  } catch (error) {
+    if (version !== authVersion || owner !== getAuthToken()) throw changedContext();
+    if (error.status !== 401 && !(error.status === 409 && error.code === "AUTH_CONTEXT_CHANGED")) throw error;
+    // Another tab may already have rotated this legacy credential. Probe its cookie once.
+    confirmed = normalizeUser(await request(`${API_PREFIX}/auth/me`, { authToken: "", preserveAuthOnUnauthorized: true }));
+  }
+  if (version !== authVersion || owner !== getAuthToken()) throw changedContext();
+  if (confirmed?.is_guest !== false || String(confirmed.id) !== String(user.id) || !validSessionId(confirmed.session_id)) throw changedContext();
+  setCookieSession(confirmed.session_id, { notify: false, draftOwner: owner, upgradeFrom: user.session_id });
+  return confirmed;
+}
+
+async function browserLogin(path, body, upgradingGuest = false) {
+  const owner = getAuthToken();
+  const version = authVersion;
+  const original = owner && upgradingGuest ? await getCurrentUser({ redirectOnUnauthorized: false }) : null;
+  return withSessionMutation(owner, version, async () => {
+    const result = await request(path, {
+      method: "POST", body, expectedSessionId: owner ? null : "anonymous", preserveAuthOnUnauthorized: true,
+    });
+    if (version !== authVersion || owner !== getAuthToken()) throw changedContext();
+    await confirmMemberCookie(result);
+    if (version !== authVersion || owner !== getAuthToken()) throw changedContext();
+    const user = normalizeUser(result.user);
+    const sameGuest = original?.is_guest === true && String(original.id) === String(user.id);
+    setCookieSession(result.session_id, { draftOwner: sameGuest ? owner : "" });
+    return { user: { ...user, is_guest: false }, session_id: result.session_id };
+  });
+}
+
 async function accountAuthentication(action, username, password, { preserveGuest = false } = {}) {
+  if (usesCookieSession()) {
+    return browserLogin(`${API_PREFIX}/auth/${action}`, { username: String(username || "").trim().toLowerCase(), password }, action === "register");
+  }
   const originalToken = getAuthToken();
   let result = await request(`${API_PREFIX}/auth/${action}`, {
     method: "POST", body: { username: String(username || "").trim().toLowerCase(), password },
@@ -123,16 +239,43 @@ function requestSms(action, body) {
   });
 }
 
-export async function sendSmsCode(phone) {
-  const result = await requestSms("send", { phone: phone.trim() });
+function parseSmsCaptcha(captcha) {
+  if (typeof captcha?.id !== "string" || !captcha.id.trim() ||
+      typeof captcha.image !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/u.test(captcha.image)) {
+    throw new ApiError("图片验证码加载失败，请重试。", { code: "SMS_CAPTCHA_RESPONSE_INVALID" });
+  }
+  return { id: captcha.id, image: captcha.image };
+}
+
+export async function getSmsCaptcha(phone) {
+  return parseSmsCaptcha(await requestSms("captcha", { phone: phone.trim() }));
+}
+
+export async function sendSmsCode(phone, captcha) {
+  const body = { phone: phone.trim() };
+  if (captcha) body.captcha = { id: captcha.id, answer: captcha.answer };
+  let result;
+  try {
+    result = await requestSms("send", body);
+  } catch (error) {
+    if (error.code === "SMS_CAPTCHA_REQUIRED" || error.code === "SMS_CAPTCHA_INVALID") {
+      throw new ApiError(error.message, {
+        status: error.status, code: error.code, details: { captcha: parseSmsCaptcha(error.details?.captcha) },
+      });
+    }
+    throw error;
+  }
   if (!Number.isSafeInteger(result?.expires_in) || result.expires_in <= 0 ||
-      !Number.isSafeInteger(result?.retry_after) || result.retry_after <= 0) {
+      !Number.isSafeInteger(result?.retry_after) || result.retry_after < 0) {
     throw new ApiError("暂时无法确认验证码发送结果，请稍后重试。", { code: "SMS_RESPONSE_INVALID" });
   }
-  return { expires_in: result.expires_in, retry_after: result.retry_after };
+  const timing = { expires_in: result.expires_in, retry_after: result.retry_after };
+  if (result.rate_limit_code) timing.rate_limit_code = result.rate_limit_code;
+  return timing;
 }
 
 export async function loginWithSms(phone, code) {
+  if (usesCookieSession()) return browserLogin(`${API_PREFIX}/auth/sms/login`, { phone: phone.trim(), code });
   const owner = getAuthToken();
   const result = await requestSms("login", { phone: phone.trim(), code });
   if (owner !== getAuthToken()) throw new ApiError("登录状态已变化，请重新登录。", { code: "AUTH_CONTEXT_CHANGED" });
@@ -173,6 +316,24 @@ export function updateProfile(profile) {
 }
 
 export async function logout() {
+  if (usesCookieSession()) {
+    if (!getAuthToken()) {
+      try { await getCurrentUser({ redirectOnUnauthorized: false }); }
+      catch (error) { if (error.status === 401) return; throw error; }
+    }
+    const owner = getAuthToken();
+    return withSessionMutation(owner, authVersion, async () => {
+      try { await request(`${API_PREFIX}/auth/logout`, { method: "POST", preserveAuthOnUnauthorized: true }); }
+      catch (error) {
+        if (error.status !== 401) {
+          handleSessionFailure(error.status, error.code, owner);
+          throw error;
+        }
+      }
+      if (owner !== getAuthToken()) throw changedContext();
+      setCookieSession("");
+    });
+  }
   try { await request(`${API_PREFIX}/auth/logout`, { method: "POST" }); }
   finally { setAuthToken(""); }
 }
@@ -193,6 +354,9 @@ function resourcePath(segment, id, suffix = "") {
 
 function errorPayload(payload, fallback) {
   const detail = payload && payload.detail;
+  if (typeof detail === "string" && typeof payload.code === "string") {
+    return { code: payload.code, message: detail, details: payload };
+  }
   if (detail && !Array.isArray(detail) && typeof detail === "object") {
     return {
       code: detail.code || fallback,
@@ -214,19 +378,22 @@ function errorPayload(payload, fallback) {
   };
 }
 
-async function request(path, { method = "GET", body, timeoutMs = DEFAULT_TIMEOUT_MS, responseType = "json", redirectOnUnauthorized = true, preserveAuthOnUnauthorized = false, authToken } = {}) {
+async function request(path, { method = "GET", body, timeoutMs = DEFAULT_TIMEOUT_MS, responseType = "json", redirectOnUnauthorized = true, preserveAuthOnUnauthorized = false, authToken, expectedSessionId } = {}) {
   const ownerToken = getAuthToken();
+  const ownerVersion = authVersion;
   const assertOwner = () => {
-    if (ownerToken !== getAuthToken()) throw new ApiError("登录状态已变化，请重新打开当前页面。", { code: "AUTH_CONTEXT_CHANGED" });
+    if (ownerVersion !== authVersion || ownerToken !== getAuthToken()) throw changedContext();
   };
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   const options = {
     method,
-    headers: authorizedHeaders({ Accept: responseType === "blob" ? "image/jpeg, image/png, image/webp, application/json" : "application/json" }, authToken === undefined ? ownerToken : authToken),
+    headers: sessionHeaders({ Accept: responseType === "blob" ? "image/jpeg, image/png, image/webp, application/json" : "application/json" }, authToken === undefined ? ownerToken : authToken),
+    credentials: "same-origin",
     cache: "no-store",
     signal: controller.signal,
   };
+  if (expectedSessionId) options.headers["X-Manji-Session-Id"] = expectedSessionId;
   if (body !== undefined) {
     if (typeof FormData !== "undefined" && body instanceof FormData) {
       options.body = body;
@@ -239,16 +406,16 @@ async function request(path, { method = "GET", body, timeoutMs = DEFAULT_TIMEOUT
   try {
     const response = await fetch(path, options);
     assertOwner();
-    if (!preserveAuthOnUnauthorized) handleAuthenticationFailure(response.status, redirectOnUnauthorized);
     const contentType = response.headers.get("content-type") || "";
-    const payload = contentType.includes("application/json")
+    const payload = response.status !== 204 && contentType.includes("application/json")
       ? await response.json()
       : null;
     // Account form failures and guest restoration must preserve the current
     // identity; their response bodies remain fenced even when rejected.
-    if (response.status !== 401 || preserveAuthOnUnauthorized) assertOwner();
+    assertOwner();
     if (!response.ok) {
       const parsed = errorPayload(payload, `HTTP_${response.status}`);
+      if (!preserveAuthOnUnauthorized) handleAuthenticationFailure(response.status, parsed.code, ownerToken, redirectOnUnauthorized);
       throw new ApiError(parsed.message, {
         status: response.status,
         code: parsed.code,
@@ -442,7 +609,8 @@ function interviewOnUnload(sessionId, suffix, originalToken, body) {
   try {
     void fetch(resourcePath("interview/sessions", sessionId, suffix), {
       method: "POST", keepalive: true, cache: "no-store",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${originalToken}` },
+      credentials: "same-origin",
+      headers: sessionHeaders({ "Content-Type": "application/json" }, originalToken),
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }).catch(() => {});
   } catch (_error) { /* Browsers may refuse keepalive while shutting down. */ }
@@ -482,10 +650,11 @@ export function stopRealtimeCall(callId, reason = "hangup") {
 
 export function stopRealtimeCallOnUnload(callId, originalToken) {
   if (!callId || !originalToken) return;
-  // sendBeacon cannot carry our Bearer header. Never substitute a new account's token.
+  // The expected session id also fences keepalive when the shared cookie changes.
   void fetch(resourcePath("realtime-calls", callId, "/stop"), {
     method: "POST", keepalive: true, cache: "no-store",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${originalToken}` },
+    credentials: "same-origin",
+    headers: sessionHeaders({ "Content-Type": "application/json" }, originalToken),
     body: JSON.stringify({ reason: "background" }),
   }).catch(() => {});
 }
@@ -589,6 +758,7 @@ export async function synthesizeTurnSpeech(
     });
   }
 
+  const owner = getAuthToken();
   const controller = new AbortController();
   let timedOut = false;
   const abortFromCaller = () => controller.abort();
@@ -610,14 +780,13 @@ export async function synthesizeTurnSpeech(
       ),
       {
         method: "POST",
-        headers: authorizedHeaders({ Accept: "audio/*, application/json" }),
+        credentials: "same-origin", headers: sessionHeaders({ Accept: "audio/*, application/json" }, owner),
         cache: "no-store",
         signal: controller.signal,
       },
     );
 
     if (!response.ok) {
-      handleAuthenticationFailure(response.status);
       const contentType = response.headers.get("content-type") || "";
       let payload = null;
       if (contentType.includes("application/json")) {
@@ -628,6 +797,8 @@ export async function synthesizeTurnSpeech(
         }
       }
       const parsed = errorPayload(payload, `HTTP_${response.status}`);
+      if (owner !== getAuthToken()) throw changedContext();
+      handleAuthenticationFailure(response.status, parsed.code, owner, true);
       throw new ApiError(parsed.message, {
         status: response.status,
         code: parsed.code,
@@ -636,6 +807,7 @@ export async function synthesizeTurnSpeech(
     }
 
     const audio = await response.blob();
+    if (owner !== getAuthToken()) throw changedContext();
     if (!audio.size) {
       throw new ApiError("小暖的语音暂时没有生成，请稍后重试。", {
         code: "TTS_EMPTY_RESULT",

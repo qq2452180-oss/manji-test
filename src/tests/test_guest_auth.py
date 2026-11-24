@@ -35,12 +35,12 @@ class MemoryAuthRepository:
     def public(user):
         return {key: user[key] for key in ("id", "username", "create_time")}
 
-    def create_user(self, username, password_hash):
+    def create_user(self, username, password_hash, token_hash=None):
         if any(user["username"] == username for user in self.users.values()):
             raise psycopg.errors.UniqueViolation("duplicate username")
         user = {
             "id": len(self.users) + 1, "username": username, "password": password_hash,
-            "token": None, "is_guest": False, "create_time": datetime.now(timezone.utc),
+            "token": token_hash, "is_guest": False, "create_time": datetime.now(timezone.utc),
         }
         self.users[user["id"]] = user
         return self.public(user)
@@ -67,15 +67,26 @@ class MemoryAuthRepository:
         user = self.find_user_by_token(token_hash)
         return user["id"] if user else None
 
-    def upgrade_guest(self, token_hash, username, password_hash):
+    def upgrade_guest(self, token_hash, username, password_hash, new_token_hash=None):
         user = next((user for user in self.users.values()
                      if user["token"] == token_hash and user["is_guest"]), None)
         if user is None:
             return None
         if any(candidate["username"] == username for candidate in self.users.values()):
             raise psycopg.errors.UniqueViolation("duplicate username")
-        user.update(username=username, password=password_hash, is_guest=False)
+        user.update(username=username, password=password_hash, is_guest=False, token=new_token_hash or token_hash)
         return self.public(user)
+
+    def revoke_token(self, token_hash):
+        for user in self.users.values():
+            if user["token"] == token_hash:
+                user["token"] = None
+
+    def exchange_member_token(self, old_hash, new_hash):
+        user = self.find_user_by_token(old_hash)
+        if user is not None and not user["is_guest"]:
+            return self.update_token(user["id"], new_hash)
+        return None
 
 
 def make_client(repository):

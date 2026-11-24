@@ -100,9 +100,10 @@ describe('connected story supplementation', () => {
 
   it('does not create a new identity to supplement an existing story', async () => {
     sessionStorage.removeItem('manji.auth_token');
+    api.ensureIdentity.mockRejectedValue(Object.assign(new Error('请登录原来的账号'), { status: 401 }));
     const page = open('?topic_id=12&story_id=81'); await flushPromises();
     expect(page.get('[role="alert"]').text()).toContain('登录原来的账号');
-    expect(api.ensureIdentity).not.toHaveBeenCalled();
+    expect(api.ensureIdentity).toHaveBeenCalled();
     expect(api.getStory).not.toHaveBeenCalled();
     expect(api.startInterview).not.toHaveBeenCalled();
   });
@@ -493,9 +494,10 @@ describe('connected text interview', () => {
 
   it('requires login when starting a new interview without a token', async () => {
     sessionStorage.removeItem('manji.auth_token');
+    api.ensureIdentity.mockRejectedValue(Object.assign(new Error('请登录原来的账号'), { status: 401 }));
     const page = open(); await flushPromises();
     await page.get('[data-testid="start-text-interview"]').trigger('click'); await flushPromises();
-    expect(api.ensureIdentity).not.toHaveBeenCalled();
+    expect(api.ensureIdentity).toHaveBeenCalled();
     expect(api.startInterview).not.toHaveBeenCalled();
     expect(page.get('[role="alert"]').text()).toContain('登录原来的账号');
     expect(page.get('a[href*="login.html"]').attributes('href')).toContain('next=');
@@ -503,13 +505,14 @@ describe('connected text interview', () => {
 
   it('does not create a guest identity when reopening an existing session without a token', async () => {
     sessionStorage.removeItem('manji.auth_token');
+    api.ensureIdentity.mockRejectedValue(Object.assign(new Error('请登录原来的账号'), { status: 401 }));
     const page = open('?session_id=41'); await flushPromises();
     expect(page.get('[role="alert"]').text()).toContain('登录原来的账号');
-    expect(api.ensureIdentity).not.toHaveBeenCalled();
+    expect(api.ensureIdentity).toHaveBeenCalled();
     expect(api.getInterview).not.toHaveBeenCalled();
     expect(api.startInterview).not.toHaveBeenCalled();
     expect(new URLSearchParams(location.search).get('session_id')).toBe('41');
     await page.get('[data-testid="start-text-interview"]').trigger('click'); await flushPromises();
-    expect(api.ensureIdentity).not.toHaveBeenCalled();
+    expect(api.ensureIdentity).toHaveBeenCalled();
   });
 });

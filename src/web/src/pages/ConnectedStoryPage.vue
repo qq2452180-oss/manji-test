@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import * as workflow from '../lib/workflow-api.js';
-import { ApiError, getAuthToken } from '../lib/api.js';
+import { getAuthToken } from '../lib/api.js';
 import { homeUrl, interviewUrl, loginUrl, organizingUrl, historyUrl } from '../lib/workflow-navigation.js';
 import '../styles/prototype-story.css';
 
@@ -25,8 +25,8 @@ const continuation = computed(() => {
 const continuationLabel = computed(() => story.value?.pending_processing ? '继续整理'
   : supplement.value?.status === 'organizing' ? '继续整理补充'
   : '继续补充');
-let alive = true, generation = 0, busy = false, identityPending = false, owner = getAuthToken();
-const current = version => alive && visible.value && generation === version && !authChanged.value;
+let alive = true, generation = 0, busy = false, owner = getAuthToken();
+const current = version => alive && visible.value && generation === version && !authChanged.value && (!owner || owner === getAuthToken());
 
 async function load() {
   if (!alive || !visible.value || busy || authChanged.value) return;
@@ -34,10 +34,8 @@ async function load() {
   busy = true; loading.value = true; error.value = ''; authRequired.value = false;
   const version = generation;
   try {
-    if (!getAuthToken()) throw new ApiError('请先登录原来的账号，再重新打开这篇故事。', { status: 401, code: 'AUTH_REQUIRED' });
-    identityPending = !getAuthToken();
-    try { await workflow.ensureIdentity(); owner = getAuthToken(); }
-    finally { identityPending = false; }
+    await workflow.ensureIdentity();
+    owner ||= getAuthToken();
     if (!current(version)) return;
     const result = await workflow.getStory(storyId);
     if (!current(version)) return;
@@ -53,7 +51,6 @@ async function load() {
   }
 }
 function changedIdentity() {
-  if (identityPending && !owner && !story.value) return;
   generation++; authChanged.value = true; authRequired.value = false; story.value = null; topic.value = null;
   document.title = '慢记 · 故事';
   loading.value = false; error.value = '登录状态已变化，请返回首页重新打开故事。';

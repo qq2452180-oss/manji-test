@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as workflow from '../lib/workflow-api.js';
-import { ApiError, getAuthToken } from '../lib/api.js';
+import { getAuthToken } from '../lib/api.js';
 import { homeUrl, interviewUrl, loginUrl, organizingUrl, storyUrl } from '../lib/workflow-navigation.js';
 import { navigate } from '../lib/navigation.js';
 import { useConnectedVoice } from '../composables/connected-voice.js';
@@ -50,7 +50,7 @@ const canFinish = computed(() => sessionId.value && !busy.value && !loading.valu
   && hasNarration.value);
 let alive = true, generation = 0, owner = getAuthToken(), pendingInput = null;
 let completedStoryId = '', resumeKind = sessionId.value ? 'home_return' : null, resumeRequestId = null;
-const current = version => alive && pageVisible.value && generation === version && !authChanged.value;
+const current = version => alive && pageVisible.value && generation === version && !authChanged.value && (!owner || owner === getAuthToken());
 const draftKey = () => sessionId.value ? `manji.connected.draft.${sessionId.value}` : '';
 const voice = useConnectedVoice({
   onSessionChange: async () => {
@@ -97,8 +97,8 @@ watch([draft, error], saveDraft);
 watch(voicePhase, value => { if (['paused', 'error'].includes(value)) paused.value = true; });
 
 async function identify() {
-  if (!getAuthToken()) throw new ApiError('请先登录原来的账号，再重新打开这段讲述。', { status: 401, code: 'AUTH_REQUIRED' });
-  await workflow.ensureIdentity(); owner = getAuthToken();
+  await workflow.ensureIdentity();
+  owner ||= getAuthToken();
 }
 function rememberSession(id) {
   if (!/^[1-9]\d*$/.test(String(id || ''))) throw new Error('会话编号暂时无法读取，请返回首页重新打开。');
@@ -161,6 +161,7 @@ async function loadTargetStory(version) {
 }
 async function exclusive(action) {
   if (!alive || busy.value || !pageVisible.value || authChanged.value || invalid.value) return;
+  if (owner && owner !== getAuthToken()) { changedIdentity(); return; }
   busy.value = true; authRequired.value = false;
   const version = generation;
   try { await action(version); }

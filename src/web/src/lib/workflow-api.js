@@ -1,4 +1,5 @@
-import { ApiError, getAuthToken } from './api.js';
+import { ApiError, getAuthToken, getCurrentUser, handleSessionFailure, sessionHeaders } from './api.js';
+import { cookieOwner, isCookieOwner } from './browser-session.js';
 
 const REQUEST_TIMEOUT_MS = 65000;
 const FINISH_TIMEOUT_MS = 300000;
@@ -82,18 +83,15 @@ async function request(path, {
   method = 'GET', body, timeoutMs = REQUEST_TIMEOUT_MS,
   authenticated = true, accountBound = authenticated,
 } = {}) {
+  if (authenticated && !getAuthToken()) assertIdentity(await ensureIdentity());
   const owner = authContext();
-  if (authenticated && !owner.token) {
-    throw new ApiError('请先登录，再打开这条记录。', { status: 401, code: 'AUTH_REQUIRED' });
-  }
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  const headers = { Accept: 'application/json' };
-  if (authenticated) headers.Authorization = `Bearer ${owner.token}`;
+  const headers = authenticated ? sessionHeaders({ Accept: 'application/json' }, owner.token) : { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   try {
     const response = await fetch(path, {
-      method, headers, cache: 'no-store', signal: controller.signal,
+      method, headers, credentials: authenticated ? 'same-origin' : 'omit', cache: 'no-store', signal: controller.signal,
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (accountBound) assertContext(owner);
@@ -118,7 +116,10 @@ async function request(path, {
     return payload;
   } catch (error) {
     if (accountBound) assertContext(owner);
-    if (error instanceof ApiError) throw error;
+    if (error instanceof ApiError) {
+      if (authenticated) handleSessionFailure(error.status, error.code, owner.token);
+      throw error;
+    }
     if (error?.name === 'AbortError') {
       throw new ApiError('请求超时，请查看当前进度后重试。', { code: 'REQUEST_TIMEOUT' });
     }
@@ -129,14 +130,21 @@ async function request(path, {
 }
 
 async function establishIdentity(owner) {
-  if (!owner.token) {
-    throw new ApiError('请先登录，再继续使用慢记。', { status: 401, code: 'AUTH_REQUIRED' });
+  let user;
+  try {
+    user = await getCurrentUser({ redirectOnUnauthorized: false });
+  } catch (error) {
+    if (error.status === 401) throw responseError(401, {});
+    throw error;
   }
-  const user = await request('/api/auth/me');
-  assertContext(owner);
-  if (typeof user?.is_guest !== 'boolean') {
+  if (typeof user?.is_guest !== 'boolean' || user.user_id == null) {
     throw new ApiError('登录信息无法确认，请重新登录。', { code: 'AUTH_RESPONSE_INVALID' });
   }
+  // Discovery and an authenticated upgrade of a legacy credential both return
+  // the verified cookie session ID. A different existing cookie must not pass.
+  const verifiedOwner = !user.is_guest && !isCookieOwner(owner.token) && user.session_id
+    ? cookieOwner(user.session_id) : owner.token;
+  assertContext({ token: verifiedOwner, version: owner.version });
   if (user.is_guest) {
     // Keep the guest credential so registration can bind its existing records.
     throw new ApiError('请先注册或登录账号，再继续使用慢记。', { status: 401, code: 'AUTH_REQUIRED' });
@@ -171,9 +179,6 @@ export async function getCatalog() {
 export async function startInterview(topicId, { targetStoryId, resumeMode = 'text' } = {}) {
   const topic = topicId == null ? null : Number(normalizeId(topicId));
   const target = targetStoryId == null ? null : Number(normalizeId(targetStoryId));
-  if (target && !getAuthToken()) {
-    throw new ApiError('请先登录原来的账号，再补充这篇故事。', { status: 401, code: 'AUTH_REQUIRED' });
-  }
   const identity = await ensureIdentity();
   assertIdentity(identity);
   return normalizeResult(await request('/api/interviews', {
@@ -226,12 +231,12 @@ export async function stopVoiceCall(callId) {
   return normalizeCall(await request(voiceCallPath(callId, '/stop'), { method: 'POST' }));
 }
 
-export function stopVoiceCallOnUnload(callId, originalToken) {
-  if (!originalToken) return;
+export function stopVoiceCallOnUnload(callId, owner) {
+  if (!owner) return;
   try {
     void fetch(voiceCallPath(callId, '/stop'), {
-      method: 'POST', keepalive: true, cache: 'no-store',
-      headers: { Authorization: `Bearer ${originalToken}` },
+      method: 'POST', keepalive: true, cache: 'no-store', credentials: 'same-origin',
+      headers: sessionHeaders({}, owner),
     }).catch(() => {});
   } catch (_) { /* A departing page still closes its local microphone immediately. */ }
 }

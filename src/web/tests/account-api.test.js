@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAuthToken, hasPreviousGuest, loginAccount, loginWithSms, registerAccount, restoreGuest, sendSmsCode, setAuthToken } from '../src/lib/api.js';
+import { getAuthToken, getSmsCaptcha, hasPreviousGuest, loginAccount, loginWithSms, registerAccount, restoreGuest, sendSmsCode, setAuthToken } from '../src/lib/api.js';
 
 const guestToken = 'g'.repeat(43), memberToken = 'm'.repeat(43), otherToken = 'o'.repeat(43);
 const member = { token: memberToken, expires_at: '2026-11-01T00:00:00Z', user: { id: 'member-a', is_guest: false } };
@@ -144,6 +144,7 @@ describe('account credentials', () => {
 
 describe('SMS login', () => {
   const phone = '13900000001';
+  const captcha = { id: 'challenge-1', image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jU3sAAAAASUVORK5CYII=' };
 
   it('sends without a Bearer and uses the retry and expiry times returned by the server', async () => {
     setAuthToken(guestToken);
@@ -159,9 +160,51 @@ describe('SMS login', () => {
     expect(sessionStorage.getItem('manji.connected.draft.17')).toBe('guest draft');
   });
 
-  it.each([{ retry_after: 60 }, { expires_in: 300, retry_after: 0 }])('rejects invalid send timings', async result => {
+  it.each([
+    { expires_in: 300, retry_after: 0 },
+    { expires_in: 300, retry_after: 3000, rate_limit_code: 'SMS_PHONE_LIMIT' },
+  ])('returns the server resend timing on a successful delivery', async result => {
+    fetch.mockResolvedValue(response(result));
+    await expect(sendSmsCode(phone)).resolves.toEqual(result);
+  });
+
+  it.each(['SMS_CAPTCHA_REQUIRED', 'SMS_CAPTCHA_INVALID'])('returns the replacement image for %s', async code => {
+    fetch.mockResolvedValue(response({ code, detail: '请输入图片验证码', captcha }, 422));
+    await expect(sendSmsCode(phone)).rejects.toMatchObject({ code, details: { captcha } });
+  });
+
+  it('requests a new image separately and sends only its id and the entered digits with a resend', async () => {
+    fetch.mockResolvedValueOnce(response(captcha)).mockResolvedValueOnce(response({ expires_in: 300, retry_after: 60 }));
+    await expect(getSmsCaptcha(phone)).resolves.toEqual(captcha);
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(['/api/auth/sms/captcha']);
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ phone });
+    await expect(sendSmsCode(phone, { ...captcha, answer: '0123' })).resolves.toEqual({ expires_in: 300, retry_after: 60 });
+    const [url, options] = fetch.mock.calls[1];
+    expect(url).toBe('/api/auth/sms/send');
+    expect(JSON.parse(options.body)).toEqual({ phone, captcha: { id: captcha.id, answer: '0123' } });
+  });
+
+  it('reports an unusable image response without sending another SMS', async () => {
+    fetch.mockResolvedValueOnce(response({ ...captcha, image: '' }))
+      .mockResolvedValueOnce(response({ code: 'SMS_CAPTCHA_REQUIRED', detail: '请输入图片验证码' }, 422));
+    await expect(getSmsCaptcha(phone)).rejects.toMatchObject({ code: 'SMS_CAPTCHA_RESPONSE_INVALID' });
+    await expect(sendSmsCode(phone)).rejects.toMatchObject({ code: 'SMS_CAPTCHA_RESPONSE_INVALID' });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([{ retry_after: 60 }, { expires_in: 300, retry_after: -1 }])('rejects invalid send timings', async result => {
     fetch.mockResolvedValue(response(result));
     await expect(sendSmsCode(phone)).rejects.toMatchObject({ code: 'SMS_RESPONSE_INVALID' });
+  });
+
+  it.each([
+    [429, { detail: '该手机号已达上限', code: 'SMS_PHONE_LIMIT', retry_after: 78120 }],
+    [503, { detail: '验证码发送失败', code: 'SMS_DELIVERY_FAILED', retry_after: 47, rate_limit_code: 'SMS_COOLDOWN' }],
+  ])('preserves SMS retry details on HTTP %s', async (status, payload) => {
+    fetch.mockResolvedValue(response(payload, status));
+    await expect(sendSmsCode(phone)).rejects.toMatchObject({
+      status, message: payload.detail, code: payload.code, details: payload,
+    });
   });
 
   it('preserves leading zeros and starts the member session without carrying over guest drafts', async () => {

@@ -1,17 +1,20 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import WorkflowNav from '../components/WorkflowNav.vue';
-import { getCurrentUser, setAuthToken } from '../lib/api.js';
+import { getCurrentUser, logout } from '../lib/api.js';
 import { useWorkflowRead } from '../composables/workflow-read.js';
 import { biographyUrl, historyUrl, interviewUrl, loginUrl } from '../lib/workflow-navigation.js';
 import '../styles/prototype-library.css';
 const family = location.pathname.endsWith('/preview.html');
 const { data: user, loading, error, anonymous, authRequired, refresh } = useWorkflowRead(() => family ? null : getCurrentUser({ redirectOnUnauthorized: false, preserveAuthOnUnauthorized: true }));
-const restartError = ref('');
-function signOut() {
+const restartError = ref(''), signingOut = ref(false);
+async function signOut() {
+  if (signingOut.value) return;
+  signingOut.value = true;
   restartError.value = '';
-  try { setAuthToken(''); }
-  catch (_) { restartError.value = '暂时无法退出，请允许浏览器存储后重试。'; }
+  try { await logout(); }
+  catch (cause) { restartError.value = cause.message || '暂时无法退出，请检查网络后重试。'; }
+  finally { signingOut.value = false; }
 }
 onMounted(() => { document.title = `慢记 · ${family ? '家人' : '我的空间'}`; });
 </script>
@@ -29,15 +32,15 @@ onMounted(() => { document.title = `慢记 · ${family ? '家人' : '我的空�
       <section v-else class="connected-saved">
         <template v-if="anonymous">
           <h2>让故事留在自己的账号里</h2><p class="connected-notice">登录后，可以找回已经讲下的故事和传记。</p>
-          <a :href="loginUrl()">手机号登录 →</a><a :href="loginUrl() + '&mode=login'">用原账号密码登录 →</a>
+          <a :href="loginUrl()">手机号登录 →</a>
         </template>
         <template v-else-if="user?.is_guest">
           <h2>请先注册或登录</h2><p class="connected-notice">注册账号后，可以保留之前的访谈、故事和传记。</p>
-          <a :href="loginUrl({ register: true })">注册并保留我的故事 →</a><a :href="loginUrl() + '&mode=sms'">用手机号登录 →</a><a :href="loginUrl() + '&mode=login'">用原账号密码登录 →</a>
+          <a :href="loginUrl({ register: true })">注册并保留我的故事 →</a><a :href="loginUrl() + '&mode=sms'">用手机号登录 →</a>
         </template>
         <template v-else>
           <h2>已登录</h2><p class="connected-notice">讲过的内容已保存在账号里，可以随时接着聊。</p>
-          <p class="connected-notice"><button class="connected-retry" @click="signOut">退出当前浏览器</button></p>
+          <p class="connected-notice"><button class="connected-retry" :disabled="signingOut" @click="signOut">{{ signingOut ? '正在退出…' : '退出当前浏览器' }}</button></p>
         </template>
         <p v-if="restartError" class="connected-error" role="alert">{{ restartError }}</p>
       </section>

@@ -49,34 +49,43 @@ def _verify_password(encoded: str | None, password: str) -> bool:
 
 
 def _token_hash(token: str) -> str:
-    if not isinstance(token, str) or re.fullmatch(r"[A-Za-z0-9_-]{43}", token) is None:
+    if not isinstance(token, str) or re.fullmatch(r"(?:c\.)?[A-Za-z0-9_-]{43}", token) is None:
         raise AuthError("请重新登录", 401)
     return hashlib.sha256(token.encode("ascii")).hexdigest()
 
 
-def issue_login_token() -> tuple[str, str]:
-    token = secrets.token_urlsafe(32)
+def issue_login_token(*, browser: bool = False) -> tuple[str, str]:
+    # 类型前缀参与摘要。浏览器凭证不能通过旧 Bearer 迁移接口续期。
+    token = ("c." if browser else "") + secrets.token_urlsafe(32)
     return token, _token_hash(token)
+
+
+def public_session_id(token: str) -> str:
+    return hashlib.sha256(b"manji-session-id:v1:" + _token_hash(token).encode("ascii")).hexdigest()
 
 
 class AuthService:
     def __init__(self, repository: AuthRepository) -> None:
         self._repository = repository
 
-    def register(self, username: str, password: str, guest_token: str | None = None) -> dict:
+    def register(
+        self, username: str, password: str, guest_token: str | None = None, *, create_session: bool = False,
+    ) -> dict:
         username, password = _normalize_credentials(username, password)
+        token, token_hash = issue_login_token(browser=True) if create_session else (None, None)
         try:
             if guest_token is not None:
                 user = self.get_user(guest_token)
                 if not user["is_guest"]:
                     raise AuthError("当前账号已注册，请直接登录", 409)
-                upgraded = self._repository.upgrade_guest(
-                    _token_hash(guest_token), username, _HASHER.hash(password),
+                user = self._repository.upgrade_guest(
+                    _token_hash(guest_token), username, _HASHER.hash(password), token_hash,
                 )
-                if upgraded is None:
+                if user is None:
                     raise AuthError("体验身份已变化，请重新登录", 401)
-                return upgraded
-            return self._repository.create_user(username, _HASHER.hash(password))
+            else:
+                user = self._repository.create_user(username, _HASHER.hash(password), token_hash)
+            return {"token": token, "user": user} if create_session else user
         except psycopg.errors.UniqueViolation:
             raise AuthError("这个账号已被使用，请换一个", 409) from None
         except psycopg.Error:
@@ -94,19 +103,34 @@ class AuthService:
         except psycopg.Error:
             raise AuthError("体验暂时无法开始，请稍后重试", 503) from None
 
-    def login(self, username: str, password: str) -> dict:
+    def login(self, username: str, password: str, *, browser: bool = False) -> dict:
         username, password = _normalize_credentials(username, password)
         try:
             user = self._repository.find_by_username(username)
             if not _verify_password(user["password"] if user else None, password):
                 raise AuthError("账号或密码不正确", 401)
-            token, token_hash = issue_login_token()
+            token, token_hash = issue_login_token(browser=browser)
             user = self._repository.update_token(user["id"], token_hash)
             if user is None:
                 raise AuthError("账号或密码不正确", 401)
             return {"token": token, "user": user}
         except psycopg.Error:
             raise AuthError("登录暂时不可用，请稍后重试", 503) from None
+
+    def upgrade_session(self, old_token: str) -> dict:
+        if re.fullmatch(r"[A-Za-z0-9_-]{43}", old_token) is None:
+            raise AuthError("请重新登录", 401)
+        old_hash = _token_hash(old_token)
+        token, token_hash = issue_login_token(browser=True)
+        try:
+            user = self._repository.exchange_member_token(old_hash, token_hash)
+        except psycopg.Error:
+            raise AuthError("登录暂时不可用，请稍后重试", 503) from None
+        if user is None:
+            if self.get_user(old_token)["is_guest"]:
+                raise AuthError("请先注册或登录账号", 403)
+            raise AuthError("请重新登录", 401)
+        return {"token": token, "user": user}
 
     def get_user_id(self, token: str) -> int:
         token_hash = _token_hash(token)
@@ -117,6 +141,12 @@ class AuthService:
         if user_id is None:
             raise AuthError("请重新登录", 401)
         return user_id
+
+    def logout(self, token: str) -> None:
+        try:
+            self._repository.revoke_token(_token_hash(token))
+        except psycopg.Error:
+            raise AuthError("退出登录暂时不可用，请稍后再试", 503) from None
 
     def get_user(self, token: str) -> dict:
         token_hash = _token_hash(token)

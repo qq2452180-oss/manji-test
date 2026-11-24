@@ -25,7 +25,7 @@ SCHEMA_DIRECTORY = Path(__file__).with_name("schema")
 MIGRATIONS_DIRECTORY = SCHEMA_DIRECTORY
 LEDGER_TABLE = "src_schema_migrations"
 REQUIRED_COLUMNS = {
-    "users": {"id", "username", "password", "token", "is_guest", "create_time", "phone_e164"},
+    "users": {"id", "username", "password", "token", "token_expires_at", "is_guest", "create_time", "phone_e164"},
     "media": {"id", "user_id", "session_id", "file_path", "create_time"},
     "interview_sessions": {
         "id", "user_id", "resume_mode", "context", "create_time", "update_time", "finish_time",

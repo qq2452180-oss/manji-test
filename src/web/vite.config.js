@@ -18,7 +18,10 @@ export default defineConfig(({ mode }) => {
         handler: html => html.replace('./src/main.js', mode === 'manji' ? './src/connected-main.js' : './src/static-main.js'),
       },
     }] : [])],
-    server: { proxy: { '/api': process.env.MANJI_API_PROXY_TARGET || 'http://127.0.0.1:8003' } },
+    server: { proxy: { '/api': {
+      target: process.env.MANJI_API_PROXY_TARGET || 'http://127.0.0.1:8003',
+      changeOrigin: false,
+    } } },
     build: {
       outDir: mode === 'html-static' ? 'dist-html' : 'dist',
       emptyOutDir: mode !== 'watch',

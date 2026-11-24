@@ -49,6 +49,7 @@ export function useConnectedVoice({ onSessionChange = async () => {}, onError = 
       await new Promise(resolve => setTimeout(resolve, 1000));
       if (disposed || !owned(call)) return false;
       result = await api.getVoiceCall(call.callId);
+      if (disposed || !owned(call)) return false;
       if (result.status === 'STOPPING' && !result.turn_pending) result = await api.stopVoiceCall(call.callId);
     }
     if (!terminal(result)) throw new Error('最后一轮讲述仍在保存，请稍后重试暂停。');
@@ -229,6 +230,7 @@ export function useConnectedVoice({ onSessionChange = async () => {}, onError = 
     stopping = (async () => {
       try {
         if (!call.callId) {
+          if (!owned(call)) return false;
           const prepared = await api.prepareVoiceCall(call.sessionId, call.requestId, call.options);
           call.callId = prepared.call_id;
         }

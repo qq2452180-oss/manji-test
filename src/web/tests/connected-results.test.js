@@ -86,9 +86,10 @@ describe('connected organizing', () => {
 
   it('keeps the existing session link and does not create a guest when credentials are absent', async () => {
     sessionStorage.removeItem('manji.auth_token');
+    api.ensureIdentity.mockRejectedValue(Object.assign(new Error('请登录原来的账号'), { status: 401 }));
     const page = organizing(); await flushPromises();
     expect(page.get('[role="alert"]').text()).toContain('登录原来的账号');
-    expect(api.ensureIdentity).not.toHaveBeenCalled();
+    expect(api.ensureIdentity).toHaveBeenCalled();
     expect(api.getInterview).not.toHaveBeenCalled();
     expect(api.finishInterview).not.toHaveBeenCalled();
     expect(location.search).toBe('?session_id=41');
@@ -200,9 +201,10 @@ describe('connected story', () => {
 
   it('does not create another identity to read an existing story without credentials', async () => {
     sessionStorage.removeItem('manji.auth_token');
+    api.ensureIdentity.mockRejectedValue(Object.assign(new Error('请登录原来的账号'), { status: 401 }));
     const page = story(); await flushPromises();
     expect(page.get('[role="alert"]').text()).toContain('登录原来的账号');
-    expect(api.ensureIdentity).not.toHaveBeenCalled();
+    expect(api.ensureIdentity).toHaveBeenCalled();
     expect(api.getStory).not.toHaveBeenCalled();
     expect(location.search).toContain('story_id=81');
   });

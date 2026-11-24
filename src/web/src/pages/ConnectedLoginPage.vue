@@ -27,12 +27,10 @@ async function checkIdentity() {
   owner = getAuthToken(); identity.value = null; identityError.value = ''; checking.value = true;
   mode.value = initialMode(false);
   try {
-    if (owner) {
-      const user = await getCurrentUser({ redirectOnUnauthorized: false });
-      if (alive && epoch === version) {
-        identity.value = user;
-        mode.value = initialMode(user.is_guest);
-      }
+    const user = await getCurrentUser({ redirectOnUnauthorized: false });
+    if (alive && epoch === version) {
+      identity.value = user;
+      mode.value = initialMode(user.is_guest);
     }
   } catch (cause) {
     if (alive && epoch === version && cause.status !== 401) identityError.value = cause.message || '暂时无法确认登录状态，请重试。';
@@ -94,10 +92,10 @@ onBeforeUnmount(() => { alive = false; ++version; password.value = ''; confirmat
       <div v-else-if="member" class="guest-account-note"><p>您已登录，可以继续查看自己的故事和传记。</p><a class="paper-link" :href="next">继续使用 →</a><a class="paper-link" href="./profile.html">管理登录状态 →</a></div>
       <template v-else-if="mode === 'sms'">
         <h2 class="login-heading">手机号登录</h2>
+        <p class="login-note">如果手机号尚未注册，短信验证通过后会自动创建账号。</p>
         <SmsLoginForm :disabled="disabled" :guest="guest" :error="error" @submit="submitSms" @clear-error="error = ''" />
-        <div class="other-login-methods">
-          <button v-if="guest" class="paper-link" :disabled="disabled" @click="switchMode('register')">注册并保留我的故事</button>
-          <button class="paper-link" :disabled="disabled" @click="switchMode('login')">账号密码登录</button>
+        <div v-if="guest" class="other-login-methods">
+          <button class="paper-link" :disabled="disabled" @click="switchMode('register')">注册并保留我的故事</button>
         </div>
       </template>
       <template v-else>
@@ -114,8 +112,7 @@ onBeforeUnmount(() => { alive = false; ++version; password.value = ''; confirmat
         <p v-if="mode === 'register'" class="login-footnote">请妥善记住账号和密码，目前暂不支持找回密码。</p>
         <div class="other-login-methods">
           <button class="paper-link" :disabled="disabled" @click="switchMode('sms')">用手机号登录</button>
-          <button v-if="mode === 'register'" class="paper-link" :disabled="disabled" @click="switchMode('login')">用原账号密码登录</button>
-          <button v-else-if="guest" class="paper-link" :disabled="disabled" @click="switchMode('register')">注册并保留我的故事</button>
+          <button v-if="guest && mode === 'login'" class="paper-link" :disabled="disabled" @click="switchMode('register')">注册并保留我的故事</button>
         </div>
       </template>
     </section>
