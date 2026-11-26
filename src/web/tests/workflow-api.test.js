@@ -165,25 +165,35 @@ describe('workflow identity', () => {
 });
 
 describe('workflow requests', () => {
-  it('reads the public catalog and normalizes resource identifiers', async () => {
+  it.each([null, '教师'])('submits decade and optional occupation %s together', async occupation => {
+    useMember();
+    fetch.mockResolvedValue(response({ birth_decade: 60, occupation, chapters: [] }));
+    expect(await api.saveBirthDecade(60, occupation)).toMatchObject({ birth_decade: 60, occupation });
+    expect(fetch.mock.calls[0][0]).toBe('/api/catalog/mine');
+    expect(fetch.mock.calls[0][1].method).toBe('PUT');
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ birth_decade: 60, occupation });
+  });
+
+  it('reads the account catalog and normalizes resource identifiers', async () => {
     useMember();
     fetch.mockResolvedValue(response({ chapters: [{
       id: 8, title: '早年', topics: [{ id: 101, chapter_id: 8, title: '老家', description: '回忆住过的地方。' }],
     }] }));
     const catalog = await api.getCatalog();
-    expect(fetch.mock.calls[0][0]).toBe('/api/catalog');
-    expect(fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+    expect(fetch.mock.calls[0][0]).toBe('/api/catalog/mine');
+    expect(fetch.mock.calls[0][1].headers['X-Manji-Session-Id']).toBe(memberSessionId);
     expect(catalog.chapters[0].id).toBe('8');
     expect(catalog.chapters[0].topics[0]).toMatchObject({ id: '101', chapter_id: '8' });
   });
 
-  it('lets the public catalog finish while a new identity is established', async () => {
+  it('discards a late catalog when switching accounts', async () => {
+    useMember();
     const pending = deferred();
     fetch.mockReturnValueOnce(pending.promise);
     const catalog = api.getCatalog();
     useGuest();
     pending.resolve(response({ chapters: [] }));
-    await expect(catalog).resolves.toEqual({ chapters: [] });
+    await expect(catalog).rejects.toMatchObject({ code: 'AUTH_CONTEXT_CHANGED' });
   });
 
   it.each([['00101', 101], [101, 101]])('starts text interview with topic %s', async (input, topic) => {

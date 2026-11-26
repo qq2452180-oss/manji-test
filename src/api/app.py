@@ -85,6 +85,7 @@ def create_app(
         try:
             yield
         finally:
+            app.state.catalog.close()
             if app.state.rtc is not None:
                 await run_in_threadpool(app.state.rtc.close)
 

@@ -233,6 +233,7 @@ def test_restart_reads_story_and_continues_original_saved_interview(
     monkeypatch.setattr("src.langgraph.node.interview.call_qwen", reply)
     with TestClient(home_app) as client:
         owner, headers = new_user(client)
+        assert client.put("/api/catalog/mine", headers=headers, json={"birth_decade": 70}).is_success
         started = client.post("/api/interviews", headers=headers, json={"topic_id": 1})
         assert started.status_code == 201
         session_id = started.json()["session_id"]

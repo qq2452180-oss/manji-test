@@ -10,10 +10,10 @@ import { ApiError, getAuthToken, getCurrentUser, setAuthToken } from '../src/lib
 import * as api from '../src/lib/workflow-api.js';
 import { navigate } from '../src/lib/navigation.js';
 
-vi.mock('../src/lib/workflow-api.js', async importOriginal => ({ ...(await importOriginal()), getCatalog: vi.fn(), getHome: vi.fn(), getBiography: vi.fn(), getChapter: vi.fn(), getInterview: vi.fn(), ensureIdentity: vi.fn() }));
+vi.mock('../src/lib/workflow-api.js', async importOriginal => ({ ...(await importOriginal()), getCatalog: vi.fn(), saveBirthDecade: vi.fn(), getHome: vi.fn(), getBiography: vi.fn(), getChapter: vi.fn(), getInterview: vi.fn(), ensureIdentity: vi.fn() }));
 vi.mock('../src/lib/api.js', async importOriginal => ({ ...(await importOriginal()), getCurrentUser: vi.fn() }));
 vi.mock('../src/lib/navigation.js', () => ({ navigate: vi.fn() }));
-const catalog = { chapters: [{ id: 8, title: '数据库中的章节', sort_order: 1, topics: [{ id: 19, chapter_id: 8, title: '数据库中的话题', description: '围绕小时候住处的生活展开。', sort_order: 1 }] }] };
+const catalog = { birth_decade: 60, chapters: [{ id: 8, title: '数据库中的章节', sort_order: 1, topics: [{ id: 19, chapter_id: 8, title: '数据库中的话题', description: '围绕小时候住处的生活展开。', sort_order: 1, section_title: '第一节 家族起点' }] }] };
 const unauthorized = () => new ApiError('登录状态已失效，请重新登录后继续。', { status: 401, code: 'AUTH_REQUIRED' });
 beforeEach(() => {
   vi.resetAllMocks();
@@ -24,19 +24,179 @@ beforeEach(() => {
 });
 
 describe('connected catalog and saved writing', () => {
-  it('reads the public database catalog and sends its IDs through the existing topic view', async () => {
+  it('reads the saved catalog and sends its IDs through the existing topic view', async () => {
     const wrapper = mount(ConnectedHomePage);
     await flushPromises();
     expect(wrapper.text()).toContain('数据库中的章节');
     expect(wrapper.text()).toContain('围绕小时候住处的生活展开。');
+    expect(wrapper.get('details').element.open).toBe(true);
     expect(wrapper.get('.prototype-nav-xiaonuan').attributes('href')).toBe('./interview.html');
     expect(wrapper.text()).not.toContain('聊聊这一章');
+    expect(wrapper.find('.decade-form').exists()).toBe(false);
+    expect(wrapper.find('.decade-current button').exists()).toBe(false);
     expect(api.getHome).not.toHaveBeenCalled();
     await wrapper.get('[data-testid="topic-19"]').trigger('click');
     const url = new URL(navigate.mock.calls[0][0], 'http://localhost/web/');
     expect(url.searchParams.get('topic_id')).toBe('19');
     expect(url.searchParams.get('chapter_id')).toBe('8');
     expect(url.searchParams.has('content_id')).toBe(false);
+  });
+
+  it('requires explicit confirmation, retains a failed selection, and locks the form after saving', async () => {
+    api.getCatalog.mockResolvedValueOnce({ birth_decade: null, chapters: [] });
+    api.saveBirthDecade.mockRejectedValueOnce(new Error('未能保存')).mockResolvedValueOnce(catalog);
+    const wrapper = mount(ConnectedHomePage);
+    await flushPromises();
+    expect(wrapper.find('input:checked').exists()).toBe(false);
+    expect(wrapper.get('[type="submit"]').element.disabled).toBe(true);
+    expect(wrapper.get('[type="submit"]').text()).toBe('确认并查看话题');
+    expect(api.getHome).not.toHaveBeenCalled();
+    await wrapper.get('input[value="60"]').setValue();
+    expect(wrapper.find('.chapter-timeline').exists()).toBe(false);
+    expect(api.saveBirthDecade).not.toHaveBeenCalled();
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('未能保存');
+    expect(wrapper.get('input:checked').element.value).toBe('60');
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(api.saveBirthDecade).toHaveBeenCalledWith(60, null);
+    expect(wrapper.get('summary').text()).toBe('第一节 家族起点');
+    expect(wrapper.find('.decade-form').exists()).toBe(false);
+    expect(wrapper.find('.decade-current button').exists()).toBe(false);
+    window.dispatchEvent(new Event('pageshow')); await flushPromises();
+    expect(wrapper.get('.decade-current').text()).toContain('60 后');
+    expect(wrapper.find('.decade-form').exists()).toBe(false);
+    expect(api.saveBirthDecade).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the template immediately and adds generated topics without resetting the selected chapter or progress', async () => {
+    vi.useFakeTimers();
+    setAuthToken('test-owner');
+    const secondChapter = { id: 9, title: '青年', topics: [{ id: 21, chapter_id: 9, title: '原有青年话题', section_title: '第一节 职业起步' }] };
+    const generating = { ...catalog, occupation: '教师', occupation_status: 'generating', chapters: [...catalog.chapters, secondChapter] };
+    api.getHome.mockResolvedValue({ topic_progress: [{ topic_id: 21, chapter_id: 9, status: 'told', story_id: 31 }] });
+    api.getCatalog.mockResolvedValueOnce({ birth_decade: null, occupation: null, chapters: [] });
+    let complete;
+    api.saveBirthDecade.mockReturnValue(new Promise(resolve => { complete = resolve; }));
+    const wrapper = mount(ConnectedHomePage);
+    await flushPromises();
+    await wrapper.get('input[value="60"]').setValue();
+    await wrapper.get('select[name="occupation"]').setValue('教师');
+    expect(api.saveBirthDecade).not.toHaveBeenCalled();
+    await wrapper.get('form').trigger('submit');
+    expect(api.saveBirthDecade).toHaveBeenCalledExactlyOnceWith(60, '教师');
+    expect(wrapper.get('fieldset').element.disabled).toBe(true);
+    expect(wrapper.get('[type="submit"]').text()).toBe('正在保存…');
+    await wrapper.get('form').trigger('submit');
+    expect(api.saveBirthDecade).toHaveBeenCalledTimes(1);
+    complete(generating);
+    await flushPromises();
+    expect(wrapper.get('.decade-current').text()).toContain('60 后 · 教师');
+    expect(wrapper.get('[data-testid="topic-19"]').element.disabled).toBe(false);
+    expect(wrapper.get('[data-testid="occupation-generating"]').text()).toContain('先讲已有话题');
+    await wrapper.get('[data-testid="chapter-9"]').trigger('click');
+    const section = wrapper.get('details').element;
+    section.open = false;
+    expect(wrapper.get('[data-testid="topic-21"]').text()).toContain('已讲述');
+    api.getCatalog.mockResolvedValueOnce({ ...generating, occupation_status: 'completed', chapters: [catalog.chapters[0], {
+      ...secondChapter, topics: [...secondChapter.topics, { id: 22, chapter_id: 9, title: '第一次独自备课', section_title: '第一节 职业起步' }],
+    }] });
+    await vi.advanceTimersByTimeAsync(3000); await flushPromises();
+    expect(wrapper.get('[data-testid="chapter-9"]').attributes('aria-selected')).toBe('true');
+    expect(wrapper.get('details').element).toBe(section);
+    expect(section.open).toBe(false);
+    expect(wrapper.get('[data-testid="topic-22"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="topic-21"]').text()).toContain('已讲述');
+    expect(wrapper.find('[data-testid="occupation-generating"]').exists()).toBe(false);
+    expect(api.getHome).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(api.getCatalog).toHaveBeenCalledTimes(2);
+    expect(wrapper.get('.decade-current').text()).toContain('教师');
+    expect(wrapper.find('select[name="occupation"]').exists()).toBe(false);
+    expect(wrapper.find('.decade-current button').exists()).toBe(false);
+  });
+
+  it('restores occupation on load and keeps existing topics available when generation fails', async () => {
+    vi.useFakeTimers();
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'generating' });
+    const wrapper = mount(ConnectedHomePage);
+    await flushPromises();
+    expect(wrapper.get('.decade-current').text()).toContain('教师');
+    expect(api.saveBirthDecade).not.toHaveBeenCalled();
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'failed', occupation_error: '职业话题暂时未能补充，请重试。' });
+    await vi.advanceTimersByTimeAsync(3000); await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('职业话题暂时未能补充');
+    expect(wrapper.get('[data-testid="topic-19"]').element.disabled).toBe(false);
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(api.getCatalog).toHaveBeenCalledTimes(2);
+    api.saveBirthDecade.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'generating' });
+    await wrapper.get('[role="alert"] button').trigger('click'); await flushPromises();
+    expect(api.saveBirthDecade).toHaveBeenLastCalledWith(60, '教师');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'completed' });
+    await vi.advanceTimersByTimeAsync(3000); await flushPromises();
+    expect(wrapper.find('[data-testid="occupation-generating"]').exists()).toBe(false);
+  });
+
+  it('loads the fixed selection after a concurrent confirmation rejects this form', async () => {
+    api.getCatalog.mockResolvedValueOnce({ birth_decade: null, occupation: null, chapters: [] })
+      .mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'completed' });
+    api.saveBirthDecade.mockRejectedValueOnce(new ApiError('主人公资料已确定，不可更改。', { status: 409 }));
+    const wrapper = mount(ConnectedHomePage); await flushPromises();
+    await wrapper.get('input[value="70"]').setValue();
+    await wrapper.get('select[name="occupation"]').setValue('工人');
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(api.saveBirthDecade).toHaveBeenCalledExactlyOnceWith(70, '工人');
+    expect(api.getCatalog).toHaveBeenCalledTimes(2);
+    expect(wrapper.get('.decade-current').text()).toContain('60 后 · 教师');
+    expect(wrapper.find('.decade-form').exists()).toBe(false);
+    expect(wrapper.find('.decade-current button').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="topic-19"]').exists()).toBe(true);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+
+  it('retries interrupted generation using the fixed selection without reopening the form', async () => {
+    vi.useFakeTimers();
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'generating' });
+    const wrapper = mount(ConnectedHomePage); await flushPromises();
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'idle' });
+    await vi.advanceTimersByTimeAsync(3000); await flushPromises();
+    expect(wrapper.find('.decade-form').exists()).toBe(false);
+    expect(wrapper.get('.decade-current').text()).toContain('60 后 · 教师');
+    expect(wrapper.find('[data-testid="occupation-generating"]').exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(api.getCatalog).toHaveBeenCalledTimes(2);
+    api.saveBirthDecade.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'generating' });
+    await wrapper.get('button.connected-retry').trigger('click'); await flushPromises();
+    expect(api.saveBirthDecade).toHaveBeenCalledExactlyOnceWith(60, '教师');
+    expect(wrapper.find('[data-testid="occupation-generating"]').exists()).toBe(true);
+    expect(wrapper.find('.decade-form').exists()).toBe(false);
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'completed' });
+    await vi.advanceTimersByTimeAsync(3000); await flushPromises();
+    expect(wrapper.find('[data-testid="occupation-generating"]').exists()).toBe(false);
+    expect(wrapper.find('button.connected-retry').exists()).toBe(false);
+  });
+
+  it.each(['account change', 'unmount'])('stops polling and ignores pending results on %s', async ending => {
+    vi.useFakeTimers();
+    setAuthToken('old-owner');
+    api.getCatalog.mockResolvedValueOnce({ ...catalog, occupation: '教师', occupation_status: 'generating' });
+    const wrapper = mount(ConnectedHomePage); await flushPromises();
+    let finishPoll;
+    api.getCatalog.mockReturnValueOnce(new Promise(resolve => { finishPoll = resolve; }));
+    await vi.advanceTimersByTimeAsync(3000);
+    if (ending === 'account change') {
+      api.getCatalog.mockResolvedValueOnce({ birth_decade: null, occupation: null, chapters: [] });
+      setAuthToken('new-owner'); await flushPromises();
+    } else wrapper.unmount();
+    finishPoll({ ...catalog, occupation: '教师', occupation_status: 'generating' });
+    await flushPromises();
+    const calls = api.getCatalog.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(api.getCatalog).toHaveBeenCalledTimes(calls);
+    if (ending === 'account change') {
+      expect(wrapper.find('[data-testid="topic-19"]').exists()).toBe(false);
+      expect(wrapper.get('.decade-form').isVisible()).toBe(true);
+    }
   });
 
   it('retries an unavailable catalog without loading demo topics', async () => {
@@ -64,21 +224,23 @@ describe('connected catalog and saved writing', () => {
     expect(navigate).toHaveBeenCalledExactlyOnceWith('./story.html?story_id=31');
   });
 
-  it('discards a late private home response after identity changes', async () => {
+  it('shows the new account form rather than the previous account’s topics or progress', async () => {
     setAuthToken('test-owner');
     let resolve;
     api.getHome.mockReturnValue(new Promise(done => { resolve = done; }));
     const wrapper = mount(ConnectedHomePage);
     await flushPromises();
-    setAuthToken('');
+    api.getCatalog.mockResolvedValueOnce({ birth_decade: null, chapters: [] });
+    setAuthToken('another-owner');
     resolve({ topic_progress: [{ topic_id: 19, chapter_id: 8, status: 'told', story_id: 31 }] });
     await flushPromises();
     expect(wrapper.text()).not.toContain('已讲述');
-    await wrapper.get('[data-testid="topic-19"]').trigger('click');
-    expect(navigate).toHaveBeenCalledExactlyOnceWith('./interview.html?topic_id=19&chapter_id=8');
+    expect(wrapper.find('[data-testid="topic-19"]').exists()).toBe(false);
+    expect(wrapper.find('input:checked').exists()).toBe(false);
+    expect(wrapper.get('.decade-form').isVisible()).toBe(true);
   });
 
-  it('reloads a pending public catalog after identity changes without leaving the spinner active', async () => {
+  it('reloads a pending member catalog after identity changes without leaving the spinner active', async () => {
     setAuthToken('old-owner');
     let resolve;
     api.getCatalog.mockReturnValueOnce(new Promise(done => { resolve = done; }));
@@ -138,7 +300,7 @@ describe('connected catalog and saved writing', () => {
     expect(navigate).toHaveBeenCalledExactlyOnceWith('./story.html?story_id=31');
   });
 
-  it('keeps the public catalog usable and returns to its chapter after login on a home 401', async () => {
+  it('offers login back to the current chapter when progress returns a 401', async () => {
     setAuthToken('expired-owner');
     history.replaceState(null, '', '/web/index.html?chapter_id=8');
     api.getHome.mockRejectedValue(unauthorized());

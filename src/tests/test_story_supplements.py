@@ -61,6 +61,7 @@ def assert_success(response, status=200):
 
 def new_story(client):
     _, headers = new_user(client)
+    assert_success(client.put("/api/catalog/mine", headers=headers, json={"birth_decade": 70}))
     session = assert_success(client.post("/api/interviews", headers=headers, json={"topic_id": 1}), 201)
     session_id = session["session_id"]
     assert_success(client.post(f"/api/interviews/{session_id}/input", headers=headers, json={"text": ORIGINAL}))
@@ -89,6 +90,8 @@ def test_two_supplements_update_one_story_and_keep_all_original_interviews(
     with TestClient(app(guest_database, tmp_path)) as client:
         headers, original_session, story_id = new_story(client)
         original_story = story_detail(client, headers, story_id)
+        assert client.put("/api/catalog/mine", headers=headers, json={"birth_decade": 60}).status_code == 409
+        assert story_detail(client, headers, story_id) == original_story
         snapshots[original_session] = assert_success(client.get(
             f"/api/interviews/{original_session}", headers=headers,
         ))["messages"]

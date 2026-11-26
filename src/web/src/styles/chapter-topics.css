@@ -24,6 +24,9 @@
 .chapter-topic-panel-heading::before { content:""; flex:none; width:3px; height:24px; background:var(--prototype-gold); }
 .chapter-topic-panel-heading h2 { min-width:0; margin:0; color:var(--prototype-ink); font-size:26px; font-weight:600; line-height:1.45; overflow-wrap:anywhere; }
 .chapter-topic-list { display:flex; flex-direction:column; }
+.chapter-section { border-top:1px solid var(--prototype-rule); }
+.chapter-section summary { padding:14px 0; font-size:18px; font-weight:600; line-height:1.6; cursor:pointer; }
+.chapter-section summary:focus-visible { outline:2px solid var(--prototype-gold); }
 .chapter-topic-card { min-width:0; border-bottom:1px solid var(--prototype-rule); }
 .chapter-topic-card:last-child { border-bottom:0; }
 .chapter-topic-row { display:flex; align-items:center; gap:14px; min-width:0; width:100%; min-height:64px; padding:17px 0; border:0; border-radius:0; background:transparent; color:var(--prototype-ink); text-align:left; }

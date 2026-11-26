@@ -64,8 +64,8 @@ def _required_env(name: str) -> str:
     return value
 
 
-def _timeout_seconds() -> float:
-    raw = os.getenv("MANJI_TEXT_TIMEOUT_SECONDS", "").strip() or "60"
+def _timeout_seconds(override: float | None = None) -> float:
+    raw = override if override is not None else os.getenv("MANJI_TEXT_TIMEOUT_SECONDS", "").strip() or "60"
     try:
         timeout = float(raw)
     except ValueError:
@@ -78,11 +78,12 @@ def _timeout_seconds() -> float:
 
 def call_qwen(
     messages: Sequence[ChatMessage], *, json_output: bool = False, enable_thinking: bool = False,
+    reasoning_effort: str | None = None, timeout_seconds: float | None = None,
 ) -> str:
     """返回模型正文；入口负责加载 .env，本方法不修改进程环境。
 
-    使用 API_KEY、BASE_URL 和 MANJI_TEXT_TIMEOUT_SECONDS。
-    固定使用 qwen3.8-max，不自动重试；由调用节点选择思考模式和 JSON 输出。
+    使用 API_KEY、BASE_URL 和 MANJI_TEXT_TIMEOUT_SECONDS；timeout_seconds 可覆盖本次等待时间。
+    固定使用 qwen3.8-max，不自动重试；由调用节点选择思考模式、强度和 JSON 输出。
     仅返回最终正文，模型的思考内容不进入播报或业务记录。
     """
 
@@ -92,8 +93,9 @@ def call_qwen(
         model=QWEN_MODEL,
         api_key=_required_env("API_KEY"),
         base_url=_required_env("BASE_URL"),
-        timeout=_timeout_seconds(),
+        timeout=_timeout_seconds(timeout_seconds),
         max_retries=0,
+        reasoning_effort=reasoning_effort,
         extra_body={"enable_thinking": enable_thinking},
         model_kwargs={"response_format": {"type": "json_object"}} if json_output else {},
     )
@@ -118,3 +120,14 @@ def call_qwen(
         if isinstance(payload, list) and len(payload) == 1 and isinstance(payload[0], dict):
             return json.dumps(payload[0], ensure_ascii=False)
     return text
+
+
+def call_qwen_thinking(
+    messages: Sequence[ChatMessage], *, json_output: bool = False, reasoning_effort: str | None = None,
+    timeout_seconds: float | None = None,
+) -> str:
+    """开启思考模式并仅返回最终正文；未指定强度时沿用供应商默认值。"""
+    return call_qwen(
+        messages, json_output=json_output, enable_thinking=True, reasoning_effort=reasoning_effort,
+        timeout_seconds=timeout_seconds,
+    )

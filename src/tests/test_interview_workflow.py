@@ -55,7 +55,7 @@ def flow(monkeypatch):
     base.inputs = Mock()
     base.inputs.build.return_value = base.materials
     base.catalog = Mock(spec=CatalogService)
-    base.catalog.get_enabled_topic.side_effect = lambda topic_id: deepcopy(TOPIC) if topic_id == TOPIC_ID else None
+    base.catalog.get_enabled_topic.side_effect = lambda topic_id, **_: deepcopy(TOPIC) if topic_id == TOPIC_ID else None
     base.service = InterviewService(
         base.graph, base.media, base.repository,
         story_repository=base.story_repository, memory_inputs=base.inputs, catalog=base.catalog,
@@ -287,7 +287,7 @@ def test_selected_topic_and_memory_reach_first_and_following_questions(flow):
     assert flow.model.call_count == 3
     flow.inputs.build.assert_called_once()
     flow.story_repository.get_opening_history.assert_called_once()
-    flow.catalog.get_enabled_topic.assert_called_once_with(TOPIC_ID)
+    flow.catalog.get_enabled_topic.assert_called_once_with(TOPIC_ID, user_id=1)
     displayed = flow.service.get_session(1, session_id)
     assert displayed["selected_topic"] == TOPIC
     assert all(marker not in json.dumps(displayed, ensure_ascii=False) for marker in (PROFILE, SUMMARY, EVENT))
@@ -411,7 +411,7 @@ def test_only_first_saved_opening_is_first_use_even_without_answers_or_stories(f
     flow.story_repository.histories.clear()
     flow.inputs.build.return_value = {"user_profile": {}, "life_event_context": {"events": [], "stories": []}}
     other_topic = {**TOPIC, "id": TOPIC_ID + 1, "title": "常走的一条路"}
-    flow.catalog.get_enabled_topic.side_effect = lambda topic_id: deepcopy(
+    flow.catalog.get_enabled_topic.side_effect = lambda topic_id, **_: deepcopy(
         TOPIC if topic_id == TOPIC_ID else other_topic
     )
     first = flow.service.start(1, topic_id=None if first_global else TOPIC_ID)
@@ -1237,7 +1237,7 @@ def test_api_start_assembles_real_memory_service_for_topic_and_global_interviews
             assert supplied["selected_topic"] == deepcopy(TOPIC)
             assert result["selected_topic"] == TOPIC
             assert result["interview_scope"] == "chapter"
-            catalog_repository.get_enabled_topic.assert_called_once_with(TOPIC_ID)
+            catalog_repository.get_enabled_topic.assert_called_once_with(TOPIC_ID, user_id=1)
         else:
             assert supplied["previous_story_id"] == 7
             assert supplied["selected_topic"] is None

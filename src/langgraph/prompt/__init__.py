@@ -4,6 +4,7 @@ from .prompting import (
     load_biography_organizer_system_prompt,
     load_interview_system_prompt,
     load_life_event_extraction_system_prompt,
+    load_occupation_topics_system_prompt,
     load_profile_updater_system_prompt,
     load_story_summary_system_prompt,
 )
@@ -12,6 +13,7 @@ __all__ = [
     "load_biography_organizer_system_prompt",
     "load_interview_system_prompt",
     "load_life_event_extraction_system_prompt",
+    "load_occupation_topics_system_prompt",
     "load_profile_updater_system_prompt",
     "load_story_summary_system_prompt",
 ]

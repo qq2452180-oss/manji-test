@@ -49,6 +49,8 @@ def success(response, status=200):
 
 
 def begin(client, headers, text=FIRST, *, topic_id=None):
+    if topic_id:
+        success(client.put("/api/catalog/mine", headers=headers, json={"birth_decade": 70}))
     started = success(client.post("/api/interviews", headers=headers, json={
         "resume_mode": "text", **({"topic_id": topic_id} if topic_id else {}),
     }), 201)

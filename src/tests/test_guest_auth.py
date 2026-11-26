@@ -392,6 +392,7 @@ def guest_database(monkeypatch):
                 "INSERT INTO topic (chapter_id, title, description) VALUES "
                 "(1, '住过的地方', '早年住处的景物与生活片段。')"
             )
+            connection.execute("UPDATE chapter SET birth_decade = 70 WHERE id IN (1, 2)")
             connection.execute("CREATE TABLE owned_material (user_id BIGINT REFERENCES users(id))")
         yield scoped_url
     finally:
@@ -459,6 +460,7 @@ def test_postgres_full_interview_keeps_messages_photos_and_story_after_guest_upg
         old_headers = bearer(guest["token"])
         # 准备停用入口前的历史访谈；当前 HTTP 接口不再允许游客创建这些内容。
         interview = client.app.state.interview
+        client.app.state.catalog.member_catalog(user_id, 70)
         started = interview.start(user_id, topic_id=1)
         session_id = started["session_id"]
         path = "/api/interviews/" + session_id

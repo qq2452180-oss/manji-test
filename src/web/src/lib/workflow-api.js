@@ -173,7 +173,13 @@ function resourcePath(resource, id, suffix = '') {
 }
 
 export async function getCatalog() {
-  return normalizeResult(await request('/api/catalog', { authenticated: false }), true);
+  return normalizeResult(await request('/api/catalog/mine'), true);
+}
+
+export async function saveBirthDecade(birthDecade, occupation = null) {
+  return normalizeResult(await request('/api/catalog/mine', {
+    method: 'PUT', body: { birth_decade: birthDecade, occupation },
+  }), true);
 }
 
 export async function startInterview(topicId, { targetStoryId, resumeMode = 'text' } = {}) {

@@ -6,7 +6,7 @@ from ..profile.repository import ProfileRepository
 from ..story import StoryRepository
 
 
-def load_selected_topic(topic_id: int | None, *, catalog: CatalogService | None = None) -> dict:
+def load_selected_topic(topic_id: int | None, *, catalog: CatalogService | None = None, user_id: int | None = None) -> dict:
     """选择启用的话题及章节，只保留本场使用的目录快照。"""
     if topic_id is None:
         raise ValueError("请先选择章节下的话题，再开始访谈")
@@ -14,7 +14,7 @@ def load_selected_topic(topic_id: int | None, *, catalog: CatalogService | None 
         raise ValueError("话题编号无效")
     if catalog is None:
         raise CatalogError("话题目录暂时无法读取，请稍后重试", 503)
-    topic = catalog.get_enabled_topic(topic_id)
+    topic = catalog.get_enabled_topic(topic_id, user_id=user_id)
     if topic is None:
         raise ValueError("所选话题不存在或已停用，请重新选择")
     return {key: topic[key] for key in ("id", "chapter_id", "chapter_title", "title", "description")}

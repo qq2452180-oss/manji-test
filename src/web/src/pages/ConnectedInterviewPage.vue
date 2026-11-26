@@ -211,6 +211,10 @@ async function load() {
     }
     const catalog = await workflow.getCatalog();
     if (!current(version)) return;
+    if (catalog.birth_decade === null) {
+      navigate(homeUrl(), { replace: true });
+      return;
+    }
     if (topicId.value) {
       const chapter = catalog.chapters?.find(item => item.topics?.some(candidate => String(candidate.id) === topicId.value));
       topic.value = chapter?.topics.find(candidate => String(candidate.id) === topicId.value) || null;

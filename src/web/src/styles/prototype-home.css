@@ -6,6 +6,37 @@
 .prototype-home-intro { padding:18px 0 0; }
 .prototype-home-intro h1 { margin:0; color:var(--prototype-ink); font-size:36px; font-weight:650; line-height:1.45; text-wrap:balance; }
 .prototype-home a:focus-visible,.prototype-home button:focus-visible { outline:2px solid var(--prototype-gold); outline-offset:3px; }
+.connected-home { box-sizing:border-box; }
+.prototype-home-section { color:var(--prototype-muted); font-size:16px; }
+.connected-home.is-choosing-profile .prototype-home-intro { width:min(100%,520px); margin:0 auto; padding-top:36px; }
+.connected-home.is-choosing-profile .prototype-home-intro h1 { font-size:32px; font-weight:600; }
+.decade-form { box-sizing:border-box; width:min(100%,520px); margin:28px auto 24px; padding:0; border:0; background:transparent; }
+.decade-form fieldset { min-width:0; margin:0; padding:0; border:0; }
+.decade-form legend { padding:0; margin-bottom:12px; font-size:18px; font-weight:600; line-height:1.6; }
+.decade-form fieldset p,.decade-hint { margin:10px 0 18px; color:#706354; font-size:16px; line-height:1.75; }
+.decade-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.decade-option { display:flex; box-sizing:border-box; align-items:center; justify-content:center; gap:10px; min-width:0; min-height:94px; padding:16px 10px; border:1px solid #d8cfc1; border-radius:9px; background:#fffbf4; cursor:pointer; }
+.decade-option-copy { display:flex; min-width:0; flex-direction:column; gap:4px; }
+.decade-option strong { font-size:22px; font-weight:600; line-height:1.4; }
+.decade-option-copy > span { color:#706354; font-size:14px; line-height:1.5; white-space:nowrap; }
+.decade-option input { flex:none; width:20px; height:20px; margin:0; accent-color:#79582e; }
+.decade-option.chosen { border-color:#926f3f; background:#f5ecdc; }
+.decade-option:has(input:focus-visible) { outline:2px solid #926f3f; outline-offset:2px; }
+.occupation-field { margin-top:28px; }
+.occupation-field label { display:block; margin-bottom:10px; font-size:18px; font-weight:600; line-height:1.6; }
+.occupation-select { position:relative; }
+.occupation-field select { box-sizing:border-box; appearance:none; width:100%; min-height:54px; padding:12px 44px 12px 14px; border:1px solid #d8cfc1; border-radius:9px; background:#fffbf4; color:var(--prototype-ink); font:inherit; font-size:18px; }
+.occupation-select svg { position:absolute; top:50%; right:14px; width:20px; height:20px; transform:translateY(-50%); stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+.decade-form .occupation-field p { margin:10px 0 0; font-size:15px; }
+.occupation-field select:focus-visible { outline:2px solid #926f3f; outline-offset:2px; }
+.decade-actions,.decade-current { display:flex; align-items:center; gap:16px; margin-top:22px; }
+.decade-actions button { min-height:44px; border:0; background:none; color:var(--prototype-ink); font:inherit; text-decoration:underline; }
+.decade-actions { justify-content:center; margin-top:32px; }
+.decade-actions button { font-size:18px; }
+.decade-actions .decade-confirm { flex:0 1 320px; min-height:54px; padding:12px 24px; border-radius:8px; background:#705536; color:white; font-weight:600; text-decoration:none; }
+.decade-actions .decade-confirm:disabled { background:#e7dfd2; color:#706557; }
+.decade-current { margin-top:10px; }
+.decade-current + .decade-hint { margin:0; }
 @media (max-width:759px) {
   #app > main.prototype-home { max-width:680px; padding:0 22px calc(112px + env(safe-area-inset-bottom)); }
   .prototype-home-header { min-height:68px; }
@@ -14,6 +45,16 @@
   .prototype-home-intro h1 { font-size:32px; }
   .prototype-home .chapter-topic-panel { margin-top:12px; }
   .prototype-home .chapter-topic-panel-heading { padding-bottom:12px; }
+  .connected-home.is-choosing-profile .prototype-home-intro { padding-top:24px; }
+  .connected-home.is-choosing-profile .prototype-home-intro h1 { font-size:28px; }
+}
+@media (max-width:540px) {
+  .decade-form { margin-top:24px; }
+  .decade-actions { margin-top:28px; }
+  .decade-options { grid-template-columns:1fr; gap:10px; }
+  .decade-option { justify-content:flex-start; min-height:64px; padding:14px 16px; gap:14px; }
+  .decade-option-copy { flex-direction:row; align-items:center; flex-wrap:wrap; gap:4px 16px; }
+  .decade-option-copy > span { font-size:15px; }
 }
 @media (max-width:350px) {
   #app > main.prototype-home { padding-right:16px; padding-left:16px; }

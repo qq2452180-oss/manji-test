@@ -196,7 +196,7 @@ def make_interview_flow(monkeypatch, *, with_biography=False):
     story_repository = FakeStoryRepository()
     topic = {"id": 13, "chapter_id": 2, "chapter_title": "早年生活与长大的地方", "title": "住过的地方", "description": "小时候的住处与日常。"}
     catalog = Mock(spec=CatalogService)
-    catalog.get_enabled_topic.side_effect = lambda topic_id: deepcopy(topic) if topic_id == topic["id"] else None
+    catalog.get_enabled_topic.side_effect = lambda topic_id, **_: deepcopy(topic) if topic_id == topic["id"] else None
     biography_service = BiographyService(biography_repository) if with_biography else None
     biography_options = {"biography_service": biography_service} if with_biography else {}
     graph = build_graph(story_repository=story_repository)

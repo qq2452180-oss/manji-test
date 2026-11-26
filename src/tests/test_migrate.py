@@ -1,6 +1,7 @@
 """完整 schema 初始化与校验；数据库用例仅连接专用测试库创建的临时库。"""
 
 from concurrent.futures import ThreadPoolExecutor
+import json
 import os
 import re
 import shutil
@@ -20,6 +21,7 @@ from src.common.migrate import (
     check_schema,
     load_migrations,
     main,
+    plan_migrations,
 )
 
 
@@ -37,6 +39,9 @@ SCHEMA_FILES = (
     "interview/0011_rtc_calls.sql",
     "account/0012_sms_login.sql",
     "account/0013_session_expiry.sql",
+    "content/0014_decade_catalog.sql",
+    "content/0015_occupation_topics.sql",
+    "content/0016_occupation_selection.sql",
 )
 BUSINESS_TABLES = {
     "users", "interview_sessions", "media", "user_profiles", "life_events", "chapter", "story", "topic", "story_revisions", "biography", "rtc_calls",
@@ -80,7 +85,7 @@ def context_message(identifier, *, source=None):
 
 def test_schema_files_are_complete_ordered_and_keep_relative_category_paths():
     schema = load_migrations()
-    assert [item.version for item in schema] == [f"{number:04d}" for number in range(1, 14)]
+    assert [item.version for item in schema] == [f"{number:04d}" for number in range(1, 17)]
     assert tuple(item.filename for item in schema) == SCHEMA_FILES
     assert "CREATE FUNCTION interview_context_ids_valid" in schema[1].sql
     assert "interview_sessions_context_ids_check" in schema[1].sql
@@ -139,8 +144,23 @@ def test_cli_requires_only_current_database_variable_and_hides_connection_detail
         raise psycopg.OperationalError("private-database-password")
 
     monkeypatch.setattr("src.common.migrate.psycopg.connect", unavailable)
-    assert main(["check"]) == 1
-    assert "private-database-password" not in capsys.readouterr().err
+    for command in ("check", "plan"):
+        assert main([command]) == 1
+        assert "private-database-password" not in capsys.readouterr().err
+
+
+def test_plan_is_read_only_for_empty_and_initialized_databases(database_url):
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        with connection.transaction():
+            connection.execute("SET TRANSACTION READ ONLY")
+            assert plan_migrations(connection) == current_versions()
+            assert connection.execute("SELECT to_regclass('src_schema_migrations')").fetchone() == (None,)
+        apply_migrations(connection)
+        ledger = connection.execute("SELECT * FROM src_schema_migrations ORDER BY version").fetchall()
+        with connection.transaction():
+            connection.execute("SET TRANSACTION READ ONLY")
+            assert plan_migrations(connection) == []
+        assert connection.execute("SELECT * FROM src_schema_migrations ORDER BY version").fetchall() == ledger
 
 
 def test_fresh_schema_creates_empty_business_tables_and_repeat_does_not_write(database_url):
@@ -186,8 +206,8 @@ def test_chapter_and_topic_defaults_and_required_description_and_relationship(da
     with psycopg.connect(database_url, autocommit=True) as connection:
         apply_migrations(connection)
         for table, expected_columns in {
-            "chapter": {"id", "title", "sort_order", "is_enabled"},
-            "topic": {"id", "chapter_id", "title", "description", "sort_order", "is_enabled"},
+            "chapter": {"id", "title", "sort_order", "is_enabled", "birth_decade", "volume_title"},
+            "topic": {"id", "chapter_id", "title", "description", "sort_order", "is_enabled", "section_title", "owner_user_id"},
         }.items():
             columns = connection.execute(
                 "SELECT column_name FROM information_schema.columns "
@@ -231,10 +251,14 @@ def test_chapter_and_topic_defaults_and_required_description_and_relationship(da
         assert connection.execute(
             "SELECT chapter_id FROM topic WHERE id = %s", (topic_id,),
         ).fetchone() == (chapter_id,)
-        assert connection.execute(
+        assert set(connection.execute(
             "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
             "WHERE conrelid = 'topic'::regclass AND contype = 'f'",
-        ).fetchall() == [("FOREIGN KEY (chapter_id) REFERENCES chapter(id) ON DELETE RESTRICT",)]
+        ).fetchall()) == {
+            ("FOREIGN KEY (chapter_id) REFERENCES chapter(id) ON DELETE RESTRICT",),
+            ("FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE RESTRICT",),
+        }
+        assert connection.execute("SELECT owner_user_id FROM topic WHERE id = %s", (topic_id,)).fetchone() == (None,)
 
 
 def test_context_constraint_accepts_integer_ids_and_preserves_metadata(database_url):
@@ -294,6 +318,10 @@ def test_nonempty_database_is_rejected_even_when_objects_are_in_another_schema(d
         connection.execute("INSERT INTO old_app.users VALUES ('existing-user')")
         with pytest.raises(MigrationError, match="non-empty database"):
             apply_migrations(connection)
+        with connection.transaction():
+            connection.execute("SET TRANSACTION READ ONLY")
+            with pytest.raises(MigrationError, match="non-empty database"):
+                plan_migrations(connection)
         assert connection.execute("SELECT * FROM old_app.users").fetchall() == [("existing-user",)]
         assert connection.execute("SELECT to_regclass('src_schema_migrations')").fetchone() == (None,)
 
@@ -308,6 +336,8 @@ def test_changed_schema_file_is_rejected_for_an_initialized_database(database_ur
             apply_migrations(connection, directory=schema_directory)
         with pytest.raises(MigrationError, match="checksum"):
             check_schema(connection, directory=schema_directory)
+        with pytest.raises(MigrationError, match="checksum"):
+            plan_migrations(connection, directory=schema_directory)
         assert connection.execute("SELECT * FROM src_schema_migrations ORDER BY version").fetchall() == ledger
 
 
@@ -331,6 +361,8 @@ def test_schema_check_requires_memory_and_topic_tables(database_url, table):
         connection.execute(sql.SQL("DROP TABLE {} CASCADE").format(sql.Identifier(table)))
         with pytest.raises(MigrationError, match="incomplete"):
             check_schema(connection)
+        with pytest.raises(MigrationError, match="incomplete"):
+            plan_migrations(connection)
 
 
 @pytest.mark.parametrize("table,column", [
@@ -359,6 +391,16 @@ def test_concurrent_initializations_serialize_and_leave_business_tables_empty(da
 
 def test_cli_initialize_and_check_succeed(database_url, monkeypatch, capsys):
     monkeypatch.setenv("DATABASE_URL", database_url)
+    assert main(["plan"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["pending_versions"] == current_versions()
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        database, address, port = connection.execute(
+            "SELECT current_database(), inet_server_addr()::text, inet_server_port()",
+        ).fetchone()
+        assert report == {"pending_versions": current_versions(), "database": database,
+                          "server_address": address, "server_port": port}
+        assert connection.execute("SELECT to_regclass('src_schema_migrations')").fetchone() == (None,)
     assert main([]) == 0
     assert f'"{current_versions()[-1]}"' in capsys.readouterr().out
     for command in ("init", "migrate"):
@@ -366,6 +408,8 @@ def test_cli_initialize_and_check_succeed(database_url, monkeypatch, capsys):
         assert capsys.readouterr().out.strip() == '{"applied_versions": []}'
     assert main(["check"]) == 0
     assert capsys.readouterr().out.strip() == '{"schema_valid": true}'
+    assert main(["plan"]) == 0
+    assert json.loads(capsys.readouterr().out)["pending_versions"] == []
 
 
 def test_incremental_revision_upgrade_preserves_existing_stories_and_history(database_url):
@@ -386,7 +430,7 @@ def test_incremental_revision_upgrade_preserves_existing_stories_and_history(dat
                                           (user_id,str(session_id))).fetchone()[0]
         before = connection.execute('SELECT title,body,source_session_id,create_time FROM story WHERE id=%s',(story_id,)).fetchone()
         old_ledger = connection.execute('SELECT * FROM src_schema_migrations ORDER BY version').fetchall()
-        assert apply_migrations(connection) == ['0009', '0010', '0011', '0012', '0013']
+        assert apply_migrations(connection) == current_versions()[8:]
         assert connection.execute(
             "SELECT username, password, phone_e164 FROM users WHERE id = %s", (user_id,),
         ).fetchone() == ("upgrade-test", "hash", None)
@@ -418,7 +462,7 @@ def test_biography_upgrade_keeps_supplemented_stories_unchanged(database_url):
             )
         before = connection.execute('SELECT * FROM story WHERE id=%s', (story_id,)).fetchone()
         revision = connection.execute('SELECT * FROM story_revisions WHERE story_id=%s', (story_id,)).fetchone()
-        assert apply_migrations(connection) == ['0010', '0011', '0012', '0013']
+        assert apply_migrations(connection) == current_versions()[9:]
         assert connection.execute('SELECT * FROM story WHERE id=%s', (story_id,)).fetchone() == before
         assert connection.execute('SELECT * FROM story_revisions WHERE story_id=%s', (story_id,)).fetchone() == revision
         assert connection.execute('SELECT COUNT(*) FROM biography').fetchone() == (0,)
@@ -452,7 +496,7 @@ def test_rtc_metadata_upgrade_preserves_existing_interview_and_story(database_ur
                 "INSERT INTO story (user_id, title, body, chapter_id) VALUES (%s, '旧标题', '旧正文', %s) RETURNING *",
                 (owner, chapter),
             ).fetchone()
-        assert apply_migrations(connection) == ["0011", "0012", "0013"]
+        assert apply_migrations(connection) == current_versions()[10:]
         assert connection.execute("SELECT * FROM interview_sessions").fetchall() == [session]
         assert connection.execute("SELECT * FROM story").fetchall() == [story]
         assert connection.execute("SELECT COUNT(*) FROM rtc_calls").fetchone() == (0,)
@@ -480,7 +524,63 @@ def test_phone_is_optional_unique_and_preserves_required_password(database_url):
             connection.execute(insert, (None, "+8613800000002"))
 
 
+def test_catalog_upgrade_from_0013_preserves_existing_rows_and_plan_does_not_write(database_url):
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        with connection.transaction():
+            connection.execute(
+                "CREATE TABLE src_schema_migrations (version TEXT PRIMARY KEY, filename TEXT NOT NULL, "
+                "checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+            )
+            for migration in load_migrations()[:13]:
+                connection.execute(migration.sql, prepare=False)
+                connection.execute(
+                    "INSERT INTO src_schema_migrations(version, filename, checksum) VALUES (%s, %s, %s)",
+                    (migration.version, migration.filename, migration.checksum),
+                )
+            owner = connection.execute(
+                "INSERT INTO users(username,password) VALUES('catalog-upgrade','hash') RETURNING id",
+            ).fetchone()[0]
+            chapter = connection.execute(
+                "INSERT INTO chapter(title,sort_order) VALUES('旧章节',7) RETURNING *",
+            ).fetchone()
+            topic = connection.execute(
+                "INSERT INTO topic(chapter_id,title,description,sort_order) "
+                "VALUES(%s,'旧话题','旧话题描述',9) RETURNING *", (chapter[0],),
+            ).fetchone()
+            story = connection.execute(
+                "INSERT INTO story(user_id,title,body,chapter_id) VALUES(%s,'旧标题','旧正文',%s) RETURNING *",
+                (owner, chapter[0]),
+            ).fetchone()
+        ledger = connection.execute("SELECT * FROM src_schema_migrations ORDER BY version").fetchall()
+        with connection.transaction():
+            connection.execute("SET TRANSACTION READ ONLY")
+            assert plan_migrations(connection) == ["0014", "0015", "0016"]
+        assert connection.execute("SELECT * FROM src_schema_migrations ORDER BY version").fetchall() == ledger
+        assert connection.execute("SELECT * FROM chapter").fetchall() == [chapter]
+        assert connection.execute("SELECT * FROM topic").fetchall() == [topic]
+        assert apply_migrations(connection) == ["0014", "0015", "0016"]
+        assert connection.execute(
+            "SELECT id,title,sort_order,is_enabled FROM chapter",
+        ).fetchall() == [chapter]
+        assert connection.execute(
+            "SELECT id,chapter_id,title,description,sort_order,is_enabled FROM topic",
+        ).fetchall() == [topic]
+        assert connection.execute("SELECT * FROM story").fetchall() == [story]
+        assert connection.execute("SELECT birth_decade,volume_title FROM chapter").fetchall() == [(None, None)]
+        assert connection.execute("SELECT section_title,owner_user_id FROM topic").fetchall() == [(None, None)]
+        assert connection.execute(
+            "SELECT birth_decade,occupation,occupation_topic_keys FROM users WHERE id=%s", (owner,),
+        ).fetchone() == (None, None, [])
+        assert connection.execute("SELECT * FROM src_schema_migrations ORDER BY version LIMIT 13").fetchall() == ledger
+        assert plan_migrations(connection) == []
+        assert apply_migrations(connection) == []
+        check_schema(connection)
+
+
 def test_session_upgrade_grants_one_window_to_existing_members(database_url, schema_directory):
+    (schema_directory / "content/0016_occupation_selection.sql").unlink()
+    (schema_directory / "content/0015_occupation_topics.sql").unlink()
+    (schema_directory / "content/0014_decade_catalog.sql").unlink()
     (schema_directory / "account/0013_session_expiry.sql").unlink()
     with psycopg.connect(database_url, autocommit=True) as connection:
         # Install the previous version with a representative ledger and users.
@@ -493,7 +593,7 @@ def test_session_upgrade_grants_one_window_to_existing_members(database_url, sch
         connection.execute("INSERT INTO users(username,password,token,is_guest) VALUES "
                            "('member','hash','member-token',false),('guest','hash','guest-token',true),"
                            "('unused','hash',NULL,false)")
-        assert apply_migrations(connection) == ["0013"]
+        assert apply_migrations(connection) == current_versions()[12:]
         assert connection.execute(
             "SELECT username, token, token_expires_at IS NULL FROM users ORDER BY id"
         ).fetchall() == [("member", "member-token", False), ("guest", "guest-token", True), ("unused", None, True)]

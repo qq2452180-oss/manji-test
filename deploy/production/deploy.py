@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deploy only the existing Compose app; never migrate or restore its database."""
+"""Back up and migrate the existing database, then deploy the Compose app."""
 
 from contextlib import contextmanager
 from copy import deepcopy
@@ -20,6 +20,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 from image_archive import digest_file, inspect_archive
+from database_backup import BackupError, backup_database
 
 
 CFG = Path('/root/manji-src/deploy/src')
@@ -35,6 +36,7 @@ MEDIA = '/app/data/media'
 HEALTH_TIMEOUT = 120
 HTTP_TIMEOUT = 120
 COMMAND_TIMEOUT = 180
+MIGRATION_TIMEOUT = 900
 IMAGE_PATTERN = re.compile(re.escape(REPOSITORY) + r'@sha256:[0-9a-f]{64}\Z')
 REVISION_PATTERN = re.compile(r'[0-9a-f]{40}\Z')
 HASH_PATTERN = re.compile(r'[0-9a-f]{64}\Z')
@@ -42,6 +44,18 @@ LOCAL_IMAGE_PATTERN = re.compile(r'manji-local:[0-9a-f]{40}-[0-9a-f]{12}\Z')
 PACKAGES = CFG / 'releases'
 MAX_PACKAGE_SIZE = 2 * 1024 ** 3
 IMAGE_SETTING = re.compile(rb'(?m)^([ \t]*MANJI_APP_IMAGE[ \t]*=[ \t]*)([^\r\n]*)(\r?)$')
+
+# Bound SQL execution on the server as well as the Docker client. Preserve
+# connection options such as search_path that the production DSN may specify.
+MIGRATE_COMMAND = '''
+import os
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
+from src.common.migrate import main
+url = os.environ["DATABASE_URL"]
+options = conninfo_to_dict(url).get("options", os.environ.get("PGOPTIONS", ""))
+url = make_conninfo(url, options=options + " -c statement_timeout=120000")
+raise SystemExit(main(["migrate"], database_url=url))
+'''
 
 
 class DeploymentError(RuntimeError):
@@ -159,6 +173,22 @@ def load_state():
         raise DeploymentError('Deployment state is invalid; review it on the server') from None
 
 
+def load_database_upgrade():
+    path = CFG / 'database-upgrade.json'
+    if not path.exists():
+        return None
+    try:
+        upgrade = json.loads(path.read_text())
+        if upgrade['version'] != 1 or not isinstance(upgrade['backup'], str):
+            raise ValueError
+        for item in (upgrade['source'], upgrade['target']):
+            if not isinstance(item['image'], str) or not isinstance(item['image_id'], str):
+                raise ValueError
+        return upgrade
+    except (OSError, ValueError, KeyError, TypeError):
+        raise DeploymentError('Database upgrade record is invalid; review it on the server') from None
+
+
 def atomic_write(path, contents, metadata=None):
     if path.is_symlink():
         raise DeploymentError('Refusing to replace a symbolic-link configuration file')
@@ -205,13 +235,22 @@ def check_environment(container, environment):
         raise DeploymentError('Application environment differs from Compose configuration')
 
 
-def snapshot(*, require_healthy=True):
+def snapshot(*, require_healthy=True, upgrade=None):
     path = CFG / 'compose.env'
     contents, metadata = path.read_bytes(), path.stat()
     config = configuration()
     app = inspect(APP)
     service = config['services']['app']
-    if service['image'] != app['Config']['Image']:
+    if upgrade is not None:
+        # A crash after updating compose.env can leave the old container running.
+        # Permit only the two images recorded before that database upgrade.
+        allowed = (upgrade['source'], upgrade['target'])
+        configured_images = {item['image'] for item in allowed} | {upgrade.get('configured_image')}
+        if (service['image'] not in configured_images
+                or not any(app['Config']['Image'] == item['image'] and app['Image'] == item['image_id']
+                           for item in allowed)):
+            raise DeploymentError('Application differs from the interrupted database upgrade; review the server')
+    elif service['image'] != app['Config']['Image']:
         raise DeploymentError('Configured image differs from the running app; resolve deployment drift first')
     replace_image(contents, service['image'])
     check_environment(app, service.get('environment', {}))
@@ -221,7 +260,7 @@ def snapshot(*, require_healthy=True):
     image = inspect(app['Image'], image=True)
     return {
         'contents': contents, 'metadata': metadata, 'config': config, 'app': app,
-        'record': record(service['image'], image),
+        'record': record(app['Config']['Image'], image),
         'environment': service.get('environment', {}), 'mounts': mount_signature(app),
         'networks': set(app['NetworkSettings']['Networks']),
         'infrastructure': {name: inspect(name)['Id'] for name in (PG, GW)},
@@ -257,10 +296,64 @@ def wait_healthy(name):
     raise DeploymentError('Application health check timed out')
 
 
-def preflight(target, before):
+def migrate_database(name, target, before):
+    """Plan with the new image; record recovery information before any SQL write."""
+    try:
+        plan = json.loads(docker('exec', name, 'python', '-m', 'src.common.migrate', 'plan'))
+        pending = plan['pending_versions']
+        if not isinstance(pending, list) or any(not isinstance(v, str) or not re.fullmatch(r'[0-9]{4}', v)
+                                               for v in pending):
+            raise ValueError
+    except (ValueError, KeyError, TypeError):
+        raise DeploymentError('Database migration plan could not be read') from None
+    upgrade = load_database_upgrade()
+    backup = upgrade['backup'] if upgrade is not None else None
+    if pending:
+        postgres = inspect(PG)
+        if postgres['Id'] != before['infrastructure'][PG]:
+            raise DeploymentError('Database container changed before backup')
+        emit('database_backup_started', pending_versions=pending)
+        try:
+            backup = str(backup_database(plan, postgres, CFG / 'database-backups'))
+        except BackupError as error:
+            raise DeploymentError(str(error)) from None
+        emit('database_backup_created', path=backup)
+    if pending or upgrade is not None:
+        upgrade = {'version': 1, 'source': before['record'], 'target': target, 'backup': backup,
+                   'configured_image': before['config']['services']['app']['image']}
+        atomic_write(CFG / 'database-upgrade.json', (json.dumps(upgrade, indent=2) + '\n').encode())
+    if pending:
+        emit('database_migrate_started', pending_versions=pending)
+        # On timeout preflight's finally removes the container, killing its
+        # database connection. Keep the record in case COMMIT already happened.
+        docker('exec', name, 'python', '-c', MIGRATE_COMMAND, timeout=MIGRATION_TIMEOUT)
+        emit('database_migrated', applied_versions=pending, backup=backup)
+    else:
+        emit('database_current')
+    return upgrade is not None
+
+
+def remove_candidate(name, target):
+    candidate = optional_container(name)
+    if candidate is not None:
+        labels = candidate['Config'].get('Labels') or {}
+        if (candidate['Image'] != target['image_id']
+                or labels.get('com.docker.compose.project') != PROJECT
+                or labels.get('com.docker.compose.service') != 'app'
+                or labels.get('com.docker.compose.oneoff', '').lower() != 'true'):
+            raise DeploymentError('Candidate ownership changed; refusing to remove it')
+        docker('rm', '-f', name)
+
+
+def preflight(target, before, *, migrate=False):
     name = PROJECT + '-cd-check'
     if optional_container(name) is not None:
-        raise DeploymentError('A previous candidate container exists; review it before deploying')
+        upgrade = load_database_upgrade() if migrate else None
+        if upgrade is None:
+            raise DeploymentError('A previous candidate container exists; review it before deploying')
+        # The previous process may have died while its exec was still in flight.
+        # Remove only its recorded candidate before replanning the transaction.
+        remove_candidate(name, upgrade['target'])
     check_configuration(before, target['image'])
     media = [item for item in before['app']['Mounts'] if item['Destination'] == MEDIA]
     if len(media) != 1 or media[0]['Type'] not in ('volume', 'bind'):
@@ -295,20 +388,13 @@ def preflight(target, before):
             raise DeploymentError('Candidate media mount differs from the existing app')
         if any(candidate['NetworkSettings'].get('Ports', {}).values()):
             raise DeploymentError('Candidate unexpectedly published host ports')
-        # This command performs only schema/history reads; no init or migrate.
+        database_changed = migrate_database(name, target, before) if migrate else False
         docker('exec', name, 'python', '-m', 'src.common.migrate', 'check')
         wait_healthy(name)
+        return database_changed
     finally:
         try:
-            candidate = optional_container(name)
-            if candidate is not None:
-                labels = candidate['Config'].get('Labels') or {}
-                if (candidate['Image'] != target['image_id']
-                        or labels.get('com.docker.compose.project') != PROJECT
-                        or labels.get('com.docker.compose.service') != 'app'
-                        or labels.get('com.docker.compose.oneoff', '').lower() != 'true'):
-                    raise DeploymentError('Candidate ownership changed; refusing to remove it')
-                docker('rm', '-f', name)
+            remove_candidate(name, target)
         finally:
             overlay.unlink(missing_ok=True)
 
@@ -344,7 +430,7 @@ def verify_running(target, before):
     check_public()
 
 
-def switch(target, before, previous_state):
+def switch(target, before, previous_state, *, database_changed=False):
     path, state_path = CFG / 'compose.env', CFG / 'cd-state.json'
     if path.read_bytes() != before['contents']:
         raise DeploymentError('compose.env changed during preflight')
@@ -360,10 +446,19 @@ def switch(target, before, previous_state):
         check_configuration(before, target['image'])
         compose('up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'app')
         verify_running(target, before)
-        state = {'version': 1, 'current': target, 'previous': before['record']}
+        # Old code may expose newly private data or reject a newer schema. A
+        # database-changing release establishes a new application rollback floor.
+        state = {'version': 1, 'current': target,
+                 'previous': None if database_changed else before['record']}
         atomic_write(state_path, (json.dumps(state, indent=2) + '\n').encode())
+        if database_changed:
+            (CFG / 'database-upgrade.json').unlink()
         emit('deployed', image=target['image'], revision=target.get('revision'))
     except BaseException:
+        if database_changed:
+            emit('database_upgrade_needs_retry', image=target['image'])
+            raise DeploymentError('Database upgrade was started; automatic rollback is disabled. '
+                                  'Retry deployment with this or a corrected release; database backup is retained') from None
         if attempted:
             emit('rollback_started', image=before['record']['image'])
             try:
@@ -444,24 +539,59 @@ def local_image(checksum, reference, revision, expected_id):
     return info
 
 
+def recover_upgrade_application(upgrade):
+    """Compose can lose the app container between removing and recreating it."""
+    if optional_container(APP) is not None:
+        return
+    target = upgrade['target']
+    config = configuration()
+    allowed = {upgrade['source']['image'], target['image'], upgrade.get('configured_image')}
+    if config['services']['app']['image'] not in allowed:
+        raise DeploymentError('Configured image differs from the interrupted database upgrade')
+    info = inspect(target['image'], image=True)
+    validate_image(info, target.get('revision'), published=False)
+    if info['Id'] != target['image_id']:
+        raise DeploymentError('Interrupted upgrade image is missing or changed')
+    path = CFG / 'compose.env'
+    atomic_write(path, replace_image(path.read_bytes(), target['image']))
+    check_configuration({'config': config}, target['image'])
+    emit('database_upgrade_recreate_app', image=target['image'])
+    # Use the forward target only. It can remain unhealthy until the pending
+    # migration is retried; snapshot below explicitly permits that state.
+    compose('up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'app')
+
+
 def deploy(reference, revision, *, package=None, expected_id=None):
-    before, state = snapshot(), load_state()
-    if state is not None:
+    upgrade = load_database_upgrade()
+    if upgrade is not None:
+        recover_upgrade_application(upgrade)
+    before = snapshot(require_healthy=upgrade is None, upgrade=upgrade)
+    state = load_state()
+    if state is not None and upgrade is None:
         check_record(state['current'], before)
     info = (local_image(package, reference, revision, expected_id) if package is not None
             else pull_image(reference, revision))
     target = record(reference, info)
-    if target == before['record']:
+    if target == before['record'] and upgrade is None:
         emit('unchanged', image=reference, revision=revision)
         return
-    preflight(target, before)
-    switch(target, before, state)
+    try:
+        database_changed = preflight(target, before, migrate=True)
+        switch(target, before, state, database_changed=database_changed)
+    except DeploymentError as error:
+        if load_database_upgrade() is not None:
+            raise DeploymentError(str(error) + '; database upgrade recovery is pending. '
+                                  'Re-run ./deploy.sh deploy with the same package or publish a corrected release. '
+                                  'Do not restore the database automatically') from None
+        raise
 
 
 def rollback():
+    if load_database_upgrade() is not None:
+        raise DeploymentError('An interrupted database upgrade must be completed before application rollback')
     before, state = snapshot(require_healthy=False), load_state()
     if state is None or state.get('previous') is None:
-        raise DeploymentError('No previous deployment is recorded')
+        raise DeploymentError('No compatible previous deployment is recorded; database upgrades reset the rollback history')
     check_record(state['current'], before)
     target = state['previous']
     info = inspect(target['image'], image=True)
@@ -474,12 +604,16 @@ def rollback():
 
 
 def status():
-    state, app, config = load_state(), inspect(APP), configuration()
-    actual = {'image': app['Config']['Image'], 'image_id': app['Image'],
-              'revision': image_revision(app)}
-    emit('status', running=actual, healthy=app['State'].get('Health', {}).get('Status') == 'healthy',
+    state, app, config = load_state(), optional_container(APP), configuration()
+    actual = ({'image': app['Config']['Image'], 'image_id': app['Image'],
+               'revision': image_revision(app)} if app is not None else None)
+    upgrade = load_database_upgrade()
+    emit('status', running=actual,
+         healthy=app is not None and app['State'].get('Health', {}).get('Status') == 'healthy',
+         database_migrations=True,
+         database_upgrade_pending=upgrade,
          configured_image=config['services']['app']['image'], recorded=state,
-         drift=(config['services']['app']['image'] != actual['image']
+         drift=(actual is None or config['services']['app']['image'] != actual['image']
                 or (state is not None and any(state['current'].get(key) != actual[key]
                                               for key in ('image', 'image_id')))))
 

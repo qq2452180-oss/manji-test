@@ -84,11 +84,11 @@ def test_database_catalog_interview_persists_and_next_visit_reads_all_saved_memo
 
     with TestClient(create_app(database_url=guest_database, media_directory=tmp_path)) as client:
         user_id, headers = new_user(client)
-        catalog = client.get("/api/catalog")
+        catalog = client.put("/api/catalog/mine", headers=headers, json={"birth_decade": 70})
         assert catalog.status_code == 200
         chapter = next(chapter for chapter in catalog.json()["chapters"] if chapter["id"] == chapter_id)
         assert next(topic for topic in chapter["topics"] if topic["id"] == topic_id) == {
-            **{key: value for key, value in selected_topic.items() if key != "chapter_title"}, "sort_order": 0,
+            **{key: value for key, value in selected_topic.items() if key != "chapter_title"}, "sort_order": 0, "section_title": None,
         }
         started = client.post("/api/interviews", headers=headers, json={"topic_id": topic_id, "resume_mode": "text"})
         assert started.status_code == 201

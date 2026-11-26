@@ -129,6 +129,12 @@ describe('connected story supplementation', () => {
 });
 
 describe('connected text interview', () => {
+  it('returns a fresh topic deep link to the selection form if the account has no decade', async () => {
+    api.getCatalog.mockResolvedValueOnce({ birth_decade: null, chapters: [] });
+    open('?topic_id=19&chapter_id=3'); await flushPromises();
+    expect(navigate).toHaveBeenCalledWith('./index.html', { replace: true });
+    expect(api.startInterview).not.toHaveBeenCalled();
+  });
   it.each([
     ['awaiting_first_input', null], ['interview_replied', null],
     ['reply_pending', 'interview'], ['writing_pending', 'writing'],

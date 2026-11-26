@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: mode === 'html-static' ? 'dist-html' : 'dist',
       emptyOutDir: mode !== 'watch',
-      rolldownOptions: { input: pages.map(page => fileURLToPath(new URL(`./${page}.html`, import.meta.url))) },
+      rolldownOptions: { input: (mode === 'manji' ? [...pages, 'home-test'] : pages).map(page => fileURLToPath(new URL(`./${page}.html`, import.meta.url))) },
     },
     test: {
       environment: 'jsdom',

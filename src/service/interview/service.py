@@ -61,7 +61,9 @@ class InterviewService:
         if target_story_id is not None and topic_id is None:
             raise InterviewError("补充故事需要原故事的话题", 422)
         try:
-            selected_topic = load_selected_topic(topic_id, catalog=self._catalog) if topic_id is not None else None
+            selected_topic = load_selected_topic(
+                topic_id, catalog=self._catalog, user_id=user_id if target_story_id is None else None,
+            ) if topic_id is not None else None
         except CatalogError as exc:
             raise InterviewError(str(exc), exc.status_code) from exc
         except ValueError as exc:

@@ -28,6 +28,7 @@ RUN groupadd --gid 10001 manji \
 COPY src/__init__.py src/main.py ./src/
 COPY src/api/ ./src/api/
 COPY src/common/ ./src/common/
+COPY src/data/*.md ./src/data/
 COPY src/langgraph/ ./src/langgraph/
 COPY src/service/ ./src/service/
 COPY --from=web /build/src/web/dist/ ./src/web/dist/

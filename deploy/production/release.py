@@ -223,13 +223,25 @@ def upload(arguments, manifest, archive):
             time.sleep(2)
 
 
+def verify_server(arguments):
+    output = ssh(arguments, 'status', capture=True)
+    print(output, flush=True)
+    try:
+        status = json.loads(output)
+    except (ValueError, TypeError):
+        raise ValueError('无法读取服务器发布工具状态。') from None
+    if not isinstance(status, dict) or status.get('database_migrations') is not True:
+        raise ValueError('服务器部署脚本尚不支持自动数据库迁移。请先执行 ./deploy.sh init，'
+                         '上传新安装包并在服务器运行 install-server.sh，再重新发布。')
+
+
 def deploy_package(arguments, filename=None):
     manifest, archive = read_manifest(filename)
     # Check authentication before transferring a potentially large package.
-    ssh(arguments, 'status')
+    verify_server(arguments)
     if not arguments.uploaded:
         upload(arguments, manifest, archive)
-    step('服务器导入镜像、上线前检查、切换和健康验证')
+    step('服务器导入镜像、数据库备份与增量迁移、上线检查、切换和健康验证')
     ssh(arguments, 'deploy-local {sha256} {image} {revision} {image_id}'.format(**manifest))
     ssh(arguments, 'status')
 
@@ -244,12 +256,13 @@ def initialize(arguments):
         raise ValueError('缺少对应 .pub 公钥，请使用一个完整的专用密钥对。')
     destination = WORK / 'server-setup.tar.gz'
     with tarfile.open(destination, 'w:gz') as archive:
-        for name in ('deploy.py', 'image_archive.py', 'install-server.sh'):
+        for name in ('deploy.py', 'image_archive.py', 'database_backup.py', 'install-server.sh'):
             archive.add(TOOLS / name, arcname='manji-release-setup/' + name)
         archive.add(public, arcname='manji-release-setup/release-key.pub')
-    step('服务器首次安装包：' + str(destination))
+    step('服务器安装/更新包：' + str(destination))
     print('把该文件上传到服务器 /root，然后在服务器终端执行：\n'
           'cd /root && tar -xzf server-setup.tar.gz && bash manji-release-setup/install-server.sh\n'
+          '首次配置和更新部署脚本都需要安装该包；普通发布不会更新服务器部署脚本。\n'
           '完成后回到本机执行：./deploy.sh status\n'
           '私钥只保存在本机：' + str(key))
 
@@ -258,10 +271,10 @@ def choose_command():
     print('\n漫记发布工具（在 Mac 上操作）\n'
           '\n第一次使用：选 4，按提示完成服务器配置。\n'
           '平时更新网站：先将代码 git commit 保存到本地，再选 1。\n'
-          '\n  1. 发布新版网站（测试 → 打包 → 上传 → 更新线上应用）\n'
+          '\n  1. 发布新版网站（测试 → 打包 → 上传 → 数据库升级 → 更新应用）\n'
           '  2. 查看线上版本和运行状态\n'
           '  3. 将线上应用恢复到上一版\n'
-          '  4. 首次配置：生成安装包并显示安装步骤\n'
+          '  4. 首次配置 / 更新部署脚本：生成服务器安装包\n'
           '  0. 退出\n')
     if not sys.stdin.isatty():
         print('在终端运行 ./deploy.sh 后输入数字选择；查看完整命令用 ./deploy.sh --help。')
@@ -283,7 +296,7 @@ def main():
     parser = argparse.ArgumentParser(description='本地测试、打包、SSH 上传及部署；无需 GitHub Actions 或镜像仓库。')
     parser.add_argument('--key', default=str(KEY), help='专用发布 SSH 私钥路径')
     commands = parser.add_subparsers(dest='command')
-    commands.add_parser('init', help='生成专用密钥及服务器首次安装包')
+    commands.add_parser('init', help='生成专用密钥及服务器安装/更新包')
     commands.add_parser('check', help='检查当前工作区：前端、后端及临时数据库测试')
     for name in ('package', 'publish'):
         child = commands.add_parser(name, help='测试并打包' if name == 'package' else '测试、打包、上传并部署')
@@ -318,7 +331,7 @@ def main():
             elif arguments.command == 'package':
                 package(arguments.revision)
             elif arguments.command == 'publish':
-                ssh(arguments, 'status')
+                verify_server(arguments)
                 deploy_package(arguments, package(arguments.revision))
             elif arguments.command == 'upload':
                 manifest, archive = read_manifest(arguments.manifest)

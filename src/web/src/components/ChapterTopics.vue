@@ -16,6 +16,15 @@ const tabElements = new Map();
 const firstSelection = value => props.chapters.find(chapter => chapter.id === value)?.id || props.chapters[0]?.id || '';
 const selectedId = ref(firstSelection(props.initialChapterId));
 const selectedIndex = computed(() => props.chapters.findIndex(chapter => chapter.id === selectedId.value));
+const sections = computed(() => {
+  const groups = new Map();
+  for (const content of props.chapters[selectedIndex.value]?.core_contents || []) {
+    const title = content.section_title || '';
+    if (!groups.has(title)) groups.set(title, []);
+    groups.get(title).push(content);
+  }
+  return Array.from(groups, ([title, contents]) => ({ title, contents }));
+});
 const panelId = chapterId => `chapter-topics-panel-${instanceId}-${chapterId}`;
 const tabId = chapterId => `chapter-topics-tab-${instanceId}-${chapterId}`;
 const number = value => String(value + 1).padStart(2, '0');
@@ -121,30 +130,34 @@ function chooseTopic(chapterId, contentId) {
         :tabindex="selectedId === chapter.id ? 0 : -1"
       >
         <template v-if="selectedId === chapter.id">
-          <header class="chapter-topic-panel-heading"><h2>{{ chapter.title }}</h2></header>
-          <div class="chapter-topic-list">
-            <article
-              v-for="(content, contentIndex) in chapter.core_contents"
-              :key="content.id"
-              class="chapter-topic-card"
-            >
-              <button
-                class="chapter-topic-row"
-                type="button"
-                :data-testid="`topic-${content.id}`"
-                :disabled="topicsDisabled"
-                @click="chooseTopic(chapter.id, content.id)"
+          <header class="chapter-topic-panel-heading"><h2>{{ chapter.volume_title || chapter.title }}</h2></header>
+          <component :is="section.title ? 'details' : 'div'" v-for="(section, sectionIndex) in sections"
+            :key="section.title" :class="{ 'chapter-section': section.title }" :open="section.title && sectionIndex === 0">
+            <summary v-if="section.title">{{ section.title }}</summary>
+            <div class="chapter-topic-list">
+              <article
+                v-for="(content, contentIndex) in section.contents"
+                :key="content.id"
+                class="chapter-topic-card"
               >
-                <span class="chapter-topic-row-number" aria-hidden="true">{{ number(contentIndex) }}</span>
-                <span class="chapter-topic-row-copy">
-                  <span class="chapter-topic-row-title">{{ content.title }}</span>
-                  <span v-if="content.description || content.prompt" class="chapter-topic-prompt">{{ content.description || content.prompt }}</span>
-                </span>
-                <span v-if="hasStory(chapter.id, content.id)" class="chapter-topic-status">{{ toldLabel }}</span>
-                <svg class="chapter-topic-row-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
-              </button>
-            </article>
-          </div>
+                <button
+                  class="chapter-topic-row"
+                  type="button"
+                  :data-testid="`topic-${content.id}`"
+                  :disabled="topicsDisabled"
+                  @click="chooseTopic(chapter.id, content.id)"
+                >
+                  <span class="chapter-topic-row-number" aria-hidden="true">{{ number(contentIndex) }}</span>
+                  <span class="chapter-topic-row-copy">
+                    <span class="chapter-topic-row-title">{{ content.title }}</span>
+                    <span v-if="content.description || content.prompt" class="chapter-topic-prompt">{{ content.description || content.prompt }}</span>
+                  </span>
+                  <span v-if="hasStory(chapter.id, content.id)" class="chapter-topic-status">{{ toldLabel }}</span>
+                  <svg class="chapter-topic-row-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+                </button>
+              </article>
+            </div>
+          </component>
         </template>
       </section>
     </template>

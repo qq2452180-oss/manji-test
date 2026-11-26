@@ -10,6 +10,8 @@
 !src/api/**
 !src/common/
 !src/common/**
+!src/data/
+!src/data/*.md
 !src/langgraph/
 !src/langgraph/**
 !src/service/

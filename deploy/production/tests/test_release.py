@@ -7,6 +7,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -50,6 +51,27 @@ class ReleaseTests(unittest.TestCase):
     def test_full_archive_validates_config_and_layers(self):
         image_id = make_archive(self.archive)
         self.assertEqual(inspect_archive(self.archive, REFERENCE, REVISION)['image_id'], image_id)
+
+    def test_publish_requires_server_database_support_before_packaging(self):
+        for output in ('{"stage":"status"}', '[]', 'invalid status'):
+            with self.subTest(output=output), patch.object(release, 'ssh', return_value=output):
+                with patch('builtins.print'), self.assertRaises(ValueError):
+                    release.verify_server(SimpleNamespace())
+        with patch.object(release, 'ssh', return_value='{"database_migrations":true}'):
+            with patch('builtins.print'):
+                release.verify_server(SimpleNamespace())
+
+    def test_server_setup_includes_database_backup_module_but_no_private_key(self):
+        key = self.root / 'release-key'
+        key.write_text('private key must stay local')
+        Path(str(key) + '.pub').write_text('public key')
+        with patch.object(release, 'WORK', self.root), patch('builtins.print'):
+            release.initialize(SimpleNamespace(key=str(key)))
+        with tarfile.open(self.root / 'server-setup.tar.gz') as archive:
+            self.assertEqual(set(archive.getnames()), {
+                'manji-release-setup/' + name for name in
+                ('deploy.py', 'image_archive.py', 'database_backup.py', 'install-server.sh', 'release-key.pub')
+            })
 
     def test_missing_cached_base_layer_is_rejected(self):
         make_archive(self.archive, missing=True)

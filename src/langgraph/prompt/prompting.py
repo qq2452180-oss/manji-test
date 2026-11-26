@@ -43,3 +43,7 @@ def load_story_summary_system_prompt() -> str:
     """已保存故事的摘要：返回只包含 summary 的 JSON。"""
 
     return _read_prompt("story_summary/summary.md")
+
+
+def load_occupation_topics_system_prompt() -> str:
+    return _read_prompt("catalog/occupation_topics.md")

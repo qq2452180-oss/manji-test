@@ -112,7 +112,7 @@ def test_selected_topic_keeps_only_catalog_fields_without_questions_or_rules():
     catalog.get_enabled_topic.return_value = source
     topic = load_selected_topic(13, catalog=catalog)
     assert topic == {key: source[key] for key in ("id", "chapter_id", "chapter_title", "title", "description")}
-    catalog.get_enabled_topic.assert_called_once_with(13)
+    catalog.get_enabled_topic.assert_called_once_with(13, user_id=None)
     topic["description"] = "调用方的修改"
     assert source["description"] == "小时候住处附近的景物。"
     with pytest.raises(ValueError, match="请先选择"):

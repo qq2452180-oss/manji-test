@@ -1,8 +1,9 @@
-"""新库结构初始化：python -m src.common.migrate [init|check]。
+"""数据库结构管理：python -m src.common.migrate [init|migrate|plan|check]。
 
 schema 目录按模块保存完整建表 SQL，编号只决定依赖顺序。
 仅使用 DATABASE_URL；init 要求空库，check 只读校验。
 migrate 可追加执行尚未安装的编号 SQL；已安装文件必须保持校验和不变。
+plan 只读检查迁移历史并列出待执行版本。
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ SCHEMA_DIRECTORY = Path(__file__).with_name("schema")
 MIGRATIONS_DIRECTORY = SCHEMA_DIRECTORY
 LEDGER_TABLE = "src_schema_migrations"
 REQUIRED_COLUMNS = {
-    "users": {"id", "username", "password", "token", "token_expires_at", "is_guest", "create_time", "phone_e164"},
+    "users": {"id", "username", "password", "token", "token_expires_at", "is_guest", "create_time", "phone_e164", "birth_decade", "occupation", "occupation_topic_keys"},
     "media": {"id", "user_id", "session_id", "file_path", "create_time"},
     "interview_sessions": {
         "id", "user_id", "resume_mode", "context", "create_time", "update_time", "finish_time",
@@ -41,8 +42,8 @@ REQUIRED_COLUMNS = {
         "profile_processed", "life_event_processed", "life_event_id", "status", "create_time", "update_time",
     },
     "biography": {"user_id", "body", "updated_time"},
-    "chapter": {"id", "title", "sort_order", "is_enabled"},
-    "topic": {"id", "chapter_id", "title", "description", "sort_order", "is_enabled"},
+    "chapter": {"id", "title", "sort_order", "is_enabled", "birth_decade", "volume_title"},
+    "topic": {"id", "chapter_id", "title", "description", "sort_order", "is_enabled", "section_title", "owner_user_id"},
     "user_profiles": {"user_id", "profile_data", "created_at", "updated_at"},
     "life_events": {
         "id", "user_id", "title", "summary", "life_stage", "time_text", "status",
@@ -188,6 +189,32 @@ def _validate_columns(cursor) -> None:
         raise MigrationError("src database business tables or columns are incomplete")
 
 
+def _require_empty_database(cursor) -> None:
+    existing = cursor.execute(
+        "SELECT 1 FROM pg_class AS relation JOIN pg_namespace AS namespace "
+        "ON namespace.oid = relation.relnamespace "
+        "WHERE namespace.nspname !~ '^pg_' AND namespace.nspname <> 'information_schema' "
+        "AND relation.relkind IN ('r', 'p', 'v', 'm', 'S', 'f') LIMIT 1",
+    ).fetchone()
+    if existing is not None:
+        raise MigrationError("Refusing to initialize a non-empty database; create a new src database")
+
+
+def plan_migrations(connection: psycopg.Connection, *, directory: Path = MIGRATIONS_DIRECTORY) -> list[str]:
+    """Read migration history without initializing or changing the database."""
+    migrations = load_migrations(directory)
+    with connection.cursor(row_factory=dict_row) as cursor:
+        installed = _installed(cursor)
+        if installed is None:
+            _require_empty_database(cursor)
+            installed = []
+        _validate_history(installed, migrations, complete=False)
+        pending = migrations[len(installed):]
+        if not pending:
+            _validate_columns(cursor)
+    return [migration.version for migration in pending]
+
+
 def check_schema(connection: psycopg.Connection, *, directory: Path = MIGRATIONS_DIRECTORY) -> None:
     """Read-only readiness check; never creates a table or upgrades the database."""
     migrations = load_migrations(directory)
@@ -211,14 +238,7 @@ def apply_migrations(connection: psycopg.Connection, *, directory: Path = MIGRAT
         )
         installed = _installed(cursor)
         if installed is None:
-            existing = cursor.execute(
-                "SELECT 1 FROM pg_class AS relation JOIN pg_namespace AS namespace "
-                "ON namespace.oid = relation.relnamespace "
-                "WHERE namespace.nspname !~ '^pg_' AND namespace.nspname <> 'information_schema' "
-                "AND relation.relkind IN ('r', 'p', 'v', 'm', 'S', 'f') LIMIT 1",
-            ).fetchone()
-            if existing is not None:
-                raise MigrationError("Refusing to initialize a non-empty database; create a new src database")
+            _require_empty_database(cursor)
             cursor.execute("""
                 CREATE TABLE src_schema_migrations (
                     version TEXT PRIMARY KEY,
@@ -243,7 +263,7 @@ def apply_migrations(connection: psycopg.Connection, *, directory: Path = MIGRAT
 
 def main(argv: list[str] | None = None, *, database_url: str | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("init", "migrate", "check"), nargs="?", default="init")
+    parser.add_argument("command", choices=("init", "migrate", "plan", "check"), nargs="?", default="init")
     args = parser.parse_args(argv)
     database_url = (os.getenv("DATABASE_URL", "") if database_url is None else database_url).strip()
     if not database_url:
@@ -253,6 +273,14 @@ def main(argv: list[str] | None = None, *, database_url: str | None = None) -> i
         with psycopg.connect(database_url, autocommit=True, connect_timeout=10) as connection:
             if args.command in ("init", "migrate"):
                 report = {"applied_versions": apply_migrations(connection)}
+            elif args.command == "plan":
+                with connection.transaction():
+                    connection.execute("SET TRANSACTION READ ONLY")
+                    report = {"pending_versions": plan_migrations(connection)}
+                    database, address, port = connection.execute(
+                        "SELECT current_database(), inet_server_addr()::text, inet_server_port()",
+                    ).fetchone()
+                    report.update(database=database, server_address=address, server_port=port)
             else:
                 check_schema(connection)
                 report = {"schema_valid": True}
