@@ -27,7 +27,11 @@ class DatabaseBackupTests(unittest.TestCase):
 
     def test_unverified_database_never_runs_dump(self):
         for values in ({'server_address': '192.0.2.10'}, {'server_port': 5433},
-                       {'database': ''}, {'database': None}, {'server_address': None}):
+                       {'database': ''}, {'database': None}, {'server_address': None},
+                       {'server_address': '172.19.0.99/24'}, {'server_address': '192.0.2.10/0'},
+                       {'server_address': '192.0.2.10/32'}, {'server_address': 'fd00::99/128'},
+                       {'server_address': '172.19.0.3/33'}, {'server_address': 'fd00::3/129'},
+                       {'server_address': ''}):
             plan = dict(self.plan, **values)
             with self.subTest(values=values), patch('database_backup.subprocess.run') as run:
                 with self.assertRaises(BackupError):
@@ -99,6 +103,20 @@ class DatabaseBackupTests(unittest.TestCase):
             with self.assertRaisesRegex(BackupError, 'backup failed'):
                 backup_database(plan, self.postgres, self.directory)
         self.assertEqual(command.call_count, 1)
+
+    def test_postgres_inet_host_prefixes_match_exact_container_address(self):
+        for address in ('172.19.0.3/32', 'fd00::3/128', 'fd00:0:0:0:0:0:0:3/128'):
+            plan = dict(self.plan, server_address=address)
+
+            def run(arguments, **kwargs):
+                if 'pg_restore' not in arguments:
+                    kwargs['stdout'].write(b'PGDMP\x00test archive')
+                return subprocess.CompletedProcess(arguments, 0)
+
+            with self.subTest(address=address), patch('database_backup.subprocess.run', side_effect=run) as command:
+                result = backup_database(plan, self.postgres, self.directory)
+                self.assertTrue(result.is_file())
+                self.assertEqual(command.call_count, 2)
 
     def test_missing_container_networks_is_rejected(self):
         postgres = copy.deepcopy(self.postgres)

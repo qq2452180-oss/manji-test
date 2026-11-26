@@ -25,7 +25,10 @@ def _backup_target(plan, postgres):
             or identifier.startswith('-') or '\x00' in identifier):
         raise BackupError('Existing PostgreSQL container could not be identified')
     try:
-        address = ipaddress.ip_address(plan.get('server_address'))
+        # PostgreSQL inet::text includes /32 (IPv4) or /128 (IPv6).
+        # Keep the host address and compare it exactly with Docker's addresses;
+        # accepting a prefix must never turn this into a subnet-membership check.
+        address = ipaddress.ip_interface(plan.get('server_address')).ip
         networks = postgres['NetworkSettings']['Networks'].values()
         addresses = {
             ipaddress.ip_address(network[key])

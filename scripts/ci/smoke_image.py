@@ -2,16 +2,21 @@
 
 import argparse
 import json
+from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'deploy' / 'production'))
+from database_backup import backup_database
 
-def docker(*args, check=True):
+
+def docker(*args, check=True, stdin=None):
     result = subprocess.run(
         ["docker", *args], text=True, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, timeout=120,
+        stderr=subprocess.STDOUT, stdin=stdin, timeout=120,
     )
     if check and result.returncode:
         raise RuntimeError(result.stdout)
@@ -91,6 +96,38 @@ print('Media volume write/read/delete as non-root: OK')
 """
 
 
+def check_database_backup(image, network, database, dsn):
+    # Exercise the actual image-to-server contract. PostgreSQL's inet::text
+    # includes a host mask, which a hand-written bare-IP fixture would miss.
+    plan = json.loads(docker(
+        'run', '--rm', '--platform', 'linux/amd64', '--network', network,
+        '-e', 'DATABASE_URL=' + dsn, image, 'python', '-m', 'src.common.migrate', 'plan',
+    ).stdout)
+    assert plan['pending_versions'] == []
+    postgres = json.loads(docker('inspect', database).stdout)[0]
+    ledger_sql = ("SELECT json_agg(json_build_array(version, filename, checksum) ORDER BY version) "
+                  "FROM src_schema_migrations")
+
+    def ledger(name):
+        return json.loads(docker('exec', database, 'psql', '-U', 'postgres', '-d', name,
+                                 '-At', '-v', 'ON_ERROR_STOP=1', '-c', ledger_sql).stdout)
+
+    expected = ledger('manji_smoke_test')
+    assert expected
+    with tempfile.TemporaryDirectory(prefix='manji-smoke-backup-') as temporary:
+        archive = backup_database(plan, postgres, Path(temporary) / 'backups')
+        # This separate database exists only inside this smoke run's temporary
+        # PostgreSQL container. Never restore over the application's database.
+        restored = 'manji_smoke_restore_test'
+        docker('exec', database, 'createdb', '-U', 'postgres', restored)
+        with archive.open('rb') as source:
+            docker('exec', '-i', database, 'pg_restore', '-U', 'postgres', '-d', restored,
+                   '--exit-on-error', stdin=source)
+        assert ledger(restored) == expected
+    print('Image migration plan, server backup, and isolated restore: OK '
+          f'({len(expected)} migration records)', flush=True)
+
+
 def smoke(image, postgres_image):
     prefix = 'manji-ci-smoke-' + uuid.uuid4().hex[:10]
     network, database, app, media = (prefix + suffix for suffix in ('-net', '-pg', '-app', '-media'))
@@ -132,6 +169,7 @@ def smoke(image, postgres_image):
                 'python', '-m', 'src.common.migrate', command,
             )
             print(result.stdout.strip(), flush=True)
+        check_database_backup(image, network, database, dsn)
         created.append(('container', app))
         docker(
             'run', '-d', '--platform', 'linux/amd64', '--name', app, '--network', network,
